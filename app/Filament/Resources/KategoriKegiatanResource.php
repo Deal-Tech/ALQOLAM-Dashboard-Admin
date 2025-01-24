@@ -27,6 +27,8 @@ class KategoriKegiatanResource extends Resource
 
     protected static ?string $navigationLabel = 'Kategori Post';
 
+    protected static ?string $slug = 'kategori-kegiatan';
+
     public static function form(Form $form): Form
     {
         return $form

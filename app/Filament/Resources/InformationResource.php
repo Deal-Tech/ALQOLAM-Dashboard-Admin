@@ -29,7 +29,12 @@ class InformationResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\FileUpload::make('url_gambar')
+                    ->required()
+                    ->label('URL Gambar'),
+                Forms\Components\TextInput::make('link_berita')
+                    ->required()
+                    ->label('Link Berita'),
             ]);
     }
 
@@ -37,7 +42,9 @@ class InformationResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('url_gambar')->label('URL Gambar'),
+                Tables\Columns\TextColumn::make('link_berita')->label('Link Berita'),
+                Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
             ])
             ->filters([
                 //

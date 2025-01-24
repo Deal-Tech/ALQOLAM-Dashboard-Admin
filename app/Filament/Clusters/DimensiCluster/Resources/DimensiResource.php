@@ -18,11 +18,13 @@ class DimensiResource extends Resource
 {
     protected static ?string $model = Dimensi::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-document';
 
     protected static ?string $navigationLabel = 'Dimensi';
 
     protected static ?string $cluster = DimensiCluster::class;
+
+    protected static ?string $slug = 'dimensi';
 
     public static function getLabel(): string
     {
@@ -33,6 +35,7 @@ class DimensiResource extends Resource
     {
         return 'Dimensi';
     }
+
 
     public static function form(Form $form): Form
     {

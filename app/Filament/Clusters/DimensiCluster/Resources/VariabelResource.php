@@ -18,7 +18,7 @@ class VariabelResource extends Resource
 {
     protected static ?string $model = Variabel::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-user-group';
 
     protected static ?string $navigationLabel = 'Variabel';
 
@@ -38,7 +38,17 @@ class VariabelResource extends Resource
     {
         return $form
             ->schema([
-                //
+                //select
+                Forms\Components\Select::make('dimensi_id')
+                    ->relationship('dimensi', 'nama'),
+                
+                Forms\Components\TextInput::make('nama')
+                    ->required()
+                    ->placeholder('Nama Variabel'),
+                    
+                Forms\Components\Textarea::make('deskripsi')
+                    ->placeholder('Deskripsi Variabel'),
+
             ]);
     }
 
@@ -46,7 +56,18 @@ class VariabelResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('dimensi.nama')
+                    ->label('Dimensi'),
+
+                Tables\Columns\TextColumn::make('nama')
+                    ->label('Nama Variabel'),
+
+                Tables\Columns\TextColumn::make('deskripsi')
+                    ->label('Deskripsi Variabel'),
+                
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->label('Dibuat Pada'),
             ])
             ->filters([
                 //

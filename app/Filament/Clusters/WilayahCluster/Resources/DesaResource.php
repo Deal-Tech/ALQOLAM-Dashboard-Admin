@@ -18,8 +18,9 @@ class DesaResource extends Resource
 {
     protected static ?string $model = Desa::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-map-pin';
     
+    protected static ?string $slug = 'desa';
 
     protected static ?string $cluster = WilayahCluster::class;
 
@@ -37,7 +38,14 @@ class DesaResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\Select::make('kecamatan_id')
+                    ->relationship('kecamatan', 'nama')
+                    ->label('Kecamatan')
+                    ->required(),
+                
+                Forms\Components\TextInput::make('nama')
+                    ->required()
+                    ->placeholder('Nama Desa'),
             ]);
     }
 
@@ -45,7 +53,15 @@ class DesaResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('kecamatan.nama')
+                    ->label('Kecamatan'),
+                
+                Tables\Columns\TextColumn::make('nama')
+                    ->label('Nama'),
+                
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Dibuat Pada'),
+
             ])
             ->filters([
                 //

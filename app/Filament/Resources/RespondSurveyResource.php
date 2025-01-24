@@ -25,11 +25,37 @@ class RespondSurveyResource extends Resource
 
     protected static ?string $navigationLabel = 'Hasil Survei';
 
+    public static function getLabel(): string
+    {
+        return 'Hasil Survei';
+    }
+
+    public static function getPluralLabel(): string
+    {
+        return 'Hasil Survei';
+    }
+
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                //
+                Forms\Components\Select::make('user_id')
+                    ->relationship('user', 'name')
+                    ->required(),
+                Forms\Components\Select::make('kabupaten_id')
+                    ->relationship('kabupaten', 'nama')
+                    ->required(),
+                Forms\Components\Select::make('kecamatan_id')
+                    ->relationship('kecamatan', 'nama')
+                    ->required(),
+                Forms\Components\Select::make('desa_id')
+                    ->relationship('desa', 'nama')
+                    ->required(),
+                Forms\Components\Select::make('survey_id')
+                    ->relationship('survey', 'pertanyaan')
+                    ->required(),
+                Forms\Components\Textarea::make('jawaban')
+                    ->required(),
             ]);
     }
 
@@ -37,7 +63,13 @@ class RespondSurveyResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('user.name')->label('User'),
+                Tables\Columns\TextColumn::make('kabupaten.nama')->label('Kabupaten'),
+                Tables\Columns\TextColumn::make('kecamatan.nama')->label('Kecamatan'),
+                Tables\Columns\TextColumn::make('desa.nama')->label('Desa'),
+                Tables\Columns\TextColumn::make('survey.pertanyaan')->label('Pertanyaan Survei'),
+                Tables\Columns\TextColumn::make('jawaban')->label('Jawaban'),
+                Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
             ])
             ->filters([
                 //

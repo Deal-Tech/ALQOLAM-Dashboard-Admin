@@ -18,11 +18,13 @@ class KecamatanResource extends Resource
 {
     protected static ?string $model = Kecamatan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-c-arrows-pointing-out';
 
     protected static ?string $navigationLabel = 'Kecamatan';
 
     protected static ?string $cluster = WilayahCluster::class;
+
+    protected static ?string $slug = 'kecamatan';
 
     public static function getLabel(): string
     {
@@ -38,7 +40,14 @@ class KecamatanResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\Select::make('kabupaten_id')
+                    ->relationship('kabupaten', 'nama')
+                    ->label('Kabupaten')
+                    ->required(),
+                
+                Forms\Components\TextInput::make('nama')
+                    ->required()
+                    ->placeholder('Nama Kecamatan'),
             ]);
     }
 
@@ -46,7 +55,15 @@ class KecamatanResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('kabupaten.nama')
+                    ->label('Kabupaten'),
+                
+                Tables\Columns\TextColumn::make('nama')
+                    ->label('Nama Kecamatan'),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->label('Dibuat Pada'),
             ])
             ->filters([
                 //

@@ -18,7 +18,7 @@ class SubVariabelResource extends Resource
 {
     protected static ?string $model = SubVariabel::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-cube';
 
     protected static ?string $navigationLabel = 'Sub Variabel';
 
@@ -38,7 +38,15 @@ class SubVariabelResource extends Resource
     {
         return $form
             ->schema([
-                //
+                Forms\Components\Select::make('variabel_id')
+                    ->relationship('variabel', 'nama'),
+                
+                Forms\Components\TextInput::make('nama')
+                    ->required()
+                    ->placeholder('Nama Sub Variabel'),
+
+                Forms\Components\Textarea::make('deskripsi')
+                    ->placeholder('Deskripsi Sub Variabel'),
             ]);
     }
 
@@ -46,7 +54,18 @@ class SubVariabelResource extends Resource
     {
         return $table
             ->columns([
-                //
+                Tables\Columns\TextColumn::make('variabel.nama')
+                    ->label('Variabel'),
+                
+                Tables\Columns\TextColumn::make('nama')
+                    ->label('Nama Sub Variabel'),
+                
+                Tables\Columns\TextColumn::make('deskripsi')
+                    ->label('Deskripsi'),
+                
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->label('Dibuat Pada'),
             ])
             ->filters([
                 //
