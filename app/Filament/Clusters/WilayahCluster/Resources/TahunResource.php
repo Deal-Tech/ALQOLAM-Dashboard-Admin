@@ -3,9 +3,9 @@
 namespace App\Filament\Clusters\WilayahCluster\Resources;
 
 use App\Filament\Clusters\WilayahCluster;
-use App\Filament\Clusters\WilayahCluster\Resources\KabupatenResource\Pages;
-use App\Filament\Clusters\WilayahCluster\Resources\KabupatenResource\RelationManagers;
-use App\Models\Kabupaten;
+use App\Filament\Clusters\WilayahCluster\Resources\TahunResource\Pages;
+use App\Filament\Clusters\WilayahCluster\Resources\TahunResource\RelationManagers;
+use App\Models\Tahun;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -14,35 +14,35 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class KabupatenResource extends Resource
+class TahunResource extends Resource
 {
-    protected static ?string $model = Kabupaten::class;
+    protected static ?string $model = Tahun::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-map';
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
 
     protected static ?string $cluster = WilayahCluster::class;
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
-    protected static ?string $slug = 'kabupaten';
+    protected static ?string $slug = 'tahun';
 
     public static function getLabel(): string
     {
-        return 'Kabupaten';
+        return 'Tahun';
     }
 
     public static function getPluralLabel(): string
     {
-        return 'Kabupaten';
+        return 'Tahun';
     }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('nama')
-                ->required()
-                ->label('Nama Kabupaten'),
+                Forms\Components\TextInput::make('tahun')
+                    ->required()
+                    ->label('Tahun'),
             ]);
     }
 
@@ -50,7 +50,7 @@ class KabupatenResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('nama')->label('Nama Kabupaten'),
+                Tables\Columns\TextColumn::make('tahun')->label('Tahun'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
             ])
             ->filters([
@@ -70,7 +70,7 @@ class KabupatenResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageKabupatens::route('/'),
+            'index' => Pages\ManageTahuns::route('/'),
         ];
     }
 }

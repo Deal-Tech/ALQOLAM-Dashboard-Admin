@@ -22,6 +22,8 @@ class VariabelResource extends Resource
 
     protected static ?string $navigationLabel = 'Variabel';
 
+    protected static ?int $navigationSort = 2;
+
     protected static ?string $cluster = DimensiCluster::class;
 
     public static function getLabel(): string
@@ -38,7 +40,6 @@ class VariabelResource extends Resource
     {
         return $form
             ->schema([
-                //select
                 Forms\Components\Select::make('dimensi_id')
                     ->relationship('dimensi', 'nama'),
                 
@@ -48,7 +49,6 @@ class VariabelResource extends Resource
                     
                 Forms\Components\Textarea::make('deskripsi')
                     ->placeholder('Deskripsi Variabel'),
-
             ]);
     }
 
@@ -74,6 +74,7 @@ class VariabelResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -82,19 +83,10 @@ class VariabelResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListVariabels::route('/'),
-            'create' => Pages\CreateVariabel::route('/create'),
-            'edit' => Pages\EditVariabel::route('/{record}/edit'),
+            'index' => Pages\ManageVariabels::route('/'),
         ];
     }
 }

@@ -29,6 +29,16 @@ class KategoriKegiatanResource extends Resource
 
     protected static ?string $slug = 'kategori-kegiatan';
 
+    public static function getLabel(): string
+    {
+        return 'Kategori Post';
+    }
+
+    public static function getPluralLabel(): string
+    {
+        return 'Kategori Post';
+    }
+
     public static function form(Form $form): Form
     {
         return $form

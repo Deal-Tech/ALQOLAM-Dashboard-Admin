@@ -4,16 +4,16 @@ namespace App\Filament\Clusters\DimensiCluster\Resources\DimensiResource\Pages;
 
 use App\Filament\Clusters\DimensiCluster\Resources\DimensiResource;
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class EditDimensi extends EditRecord
+class ManageDimensis extends ManageRecords
 {
     protected static string $resource = DimensiResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\DeleteAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }

@@ -26,6 +26,8 @@ class KecamatanResource extends Resource
 
     protected static ?string $slug = 'kecamatan';
 
+    protected static ?int $navigationSort = 2;
+
     public static function getLabel(): string
     {
         return 'Kecamatan';
@@ -35,6 +37,7 @@ class KecamatanResource extends Resource
     {
         return 'Kecamatan';
     }
+
 
     public static function form(Form $form): Form
     {
@@ -64,13 +67,14 @@ class KecamatanResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->label('Dibuat Pada'),
+
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -79,20 +83,10 @@ class KecamatanResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListKecamatans::route('/'),
-            'create' => Pages\CreateKecamatan::route('/create'),
-            'view' => Pages\ViewKecamatan::route('/{record}'),
-            'edit' => Pages\EditKecamatan::route('/{record}/edit'),
+            'index' => Pages\ManageKecamatans::route('/'),
         ];
     }
 }

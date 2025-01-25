@@ -4,18 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 
-class Information extends Model
+class Tahun extends Model
 {
     use HasFactory;
 
-    protected $table = 'informations';
+    protected $table = 'tahun';
 
     protected $fillable = [
-        'url_gambar',
-        'link_berita',
+        'tahun',
     ];
-
-    
 }

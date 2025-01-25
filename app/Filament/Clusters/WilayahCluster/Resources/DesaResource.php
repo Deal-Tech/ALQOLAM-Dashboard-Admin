@@ -22,6 +22,8 @@ class DesaResource extends Resource
     
     protected static ?string $slug = 'desa';
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $cluster = WilayahCluster::class;
 
     public static function getLabel(): string
@@ -67,8 +69,8 @@ class DesaResource extends Resource
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -77,20 +79,10 @@ class DesaResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDesas::route('/'),
-            'create' => Pages\CreateDesa::route('/create'),
-            'view' => Pages\ViewDesa::route('/{record}'),
-            'edit' => Pages\EditDesa::route('/{record}/edit'),
+            'index' => Pages\ManageDesas::route('/'),
         ];
     }
 }

@@ -4,9 +4,9 @@ namespace App\Filament\Clusters\DimensiCluster\Resources\SubVariabelResource\Pag
 
 use App\Filament\Clusters\DimensiCluster\Resources\SubVariabelResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ListRecords;
+use Filament\Resources\Pages\ManageRecords;
 
-class ListSubVariabels extends ListRecords
+class ManageSubVariabels extends ManageRecords
 {
     protected static string $resource = SubVariabelResource::class;
 

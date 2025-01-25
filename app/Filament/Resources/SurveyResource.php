@@ -25,6 +25,16 @@ class SurveyResource extends Resource
 
     protected static ?string $navigationLabel = 'Pertanyaan Survei';
 
+    public static function getLabel(): string
+    {
+        return 'Survei';
+    }
+
+    public static function getPluralLabel(): string
+    {
+        return 'Survei';
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -43,13 +53,13 @@ class SurveyResource extends Resource
 
                 Forms\Components\Section::make('Jawaban')
                 ->schema([
-                    Forms\Components\TextInput::make('opsi_jawaban_1')
+                    Forms\Components\Textarea::make('opsi_jawaban_1')
                         ->required(),
-                    Forms\Components\TextInput::make('opsi_jawaban_2')
+                    Forms\Components\Textarea::make('opsi_jawaban_2')
                         ->required(),
-                    Forms\Components\TextInput::make('opsi_jawaban_3'),
-                    Forms\Components\TextInput::make('opsi_jawaban_4'),
-                    Forms\Components\TextInput::make('opsi_jawaban_5'),
+                    Forms\Components\Textarea::make('opsi_jawaban_3'),
+                    Forms\Components\Textarea::make('opsi_jawaban_4'),
+                    Forms\Components\Textarea::make('opsi_jawaban_5'),
             ])
             ->columns(2)
             ])
@@ -69,6 +79,7 @@ class SurveyResource extends Resource
                         ->required(),
                     Forms\Components\Select::make('sub_variabel_id')
                         ->relationship('subvariabel', 'nama')
+                        ->label('Sub Variabel')
                         ->required(),
 
                 ])
@@ -86,7 +97,7 @@ class SurveyResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('dimensi.nama')->label('Dimensi'),
                 Tables\Columns\TextColumn::make('variabel.nama')->label('Variabel'),
-                Tables\Columns\TextColumn::make('desa.nama')->label('Desa'),
+                Tables\Columns\TextColumn::make('subvariabel.nama')->label('Sub Variabel'),
                 Tables\Columns\TextColumn::make('pertanyaan'),
                 Tables\Columns\TextColumn::make('opsi_jawaban_1'),
                 Tables\Columns\TextColumn::make('opsi_jawaban_2'),

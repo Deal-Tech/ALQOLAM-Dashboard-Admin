@@ -22,6 +22,8 @@ class DimensiResource extends Resource
 
     protected static ?string $navigationLabel = 'Dimensi';
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $cluster = DimensiCluster::class;
 
     protected static ?string $slug = 'dimensi';
@@ -35,7 +37,6 @@ class DimensiResource extends Resource
     {
         return 'Dimensi';
     }
-
 
     public static function form(Form $form): Form
     {
@@ -66,6 +67,7 @@ class DimensiResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -74,19 +76,10 @@ class DimensiResource extends Resource
             ]);
     }
 
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListDimensis::route('/'),
-            'create' => Pages\CreateDimensi::route('/create'),
-            'edit' => Pages\EditDimensi::route('/{record}/edit'),
+            'index' => Pages\ManageDimensis::route('/'),
         ];
     }
 }

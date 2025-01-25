@@ -4,16 +4,16 @@ namespace App\Filament\Clusters\WilayahCluster\Resources\DesaResource\Pages;
 
 use App\Filament\Clusters\WilayahCluster\Resources\DesaResource;
 use Filament\Actions;
-use Filament\Resources\Pages\ViewRecord;
+use Filament\Resources\Pages\ManageRecords;
 
-class ViewDesa extends ViewRecord
+class ManageDesas extends ManageRecords
 {
     protected static string $resource = DesaResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
-            Actions\EditAction::make(),
+            Actions\CreateAction::make(),
         ];
     }
 }
