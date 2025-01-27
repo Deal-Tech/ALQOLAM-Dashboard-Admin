@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Enums\FiltersLayout;
 
 class SurveyResource extends Resource
 {
@@ -99,11 +100,6 @@ class SurveyResource extends Resource
                 Tables\Columns\TextColumn::make('variabel.nama')->label('Variabel'),
                 Tables\Columns\TextColumn::make('subvariabel.nama')->label('Sub Variabel'),
                 Tables\Columns\TextColumn::make('pertanyaan'),
-                Tables\Columns\TextColumn::make('opsi_jawaban_1'),
-                Tables\Columns\TextColumn::make('opsi_jawaban_2'),
-                Tables\Columns\TextColumn::make('opsi_jawaban_3'),
-                Tables\Columns\TextColumn::make('opsi_jawaban_4'),
-                Tables\Columns\TextColumn::make('opsi_jawaban_5'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime(),
             ])
             ->filters([
