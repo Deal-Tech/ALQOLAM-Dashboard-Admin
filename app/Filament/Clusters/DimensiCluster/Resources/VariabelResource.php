@@ -40,12 +40,12 @@ class VariabelResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('nama')
+                ->required()
+                ->placeholder('Nama Variabel'),
+
                 Forms\Components\Select::make('dimensi_id')
                     ->relationship('dimensi', 'nama'),
-                
-                Forms\Components\TextInput::make('nama')
-                    ->required()
-                    ->placeholder('Nama Variabel'),
                     
                 Forms\Components\Textarea::make('deskripsi')
                     ->placeholder('Deskripsi Variabel'),
@@ -55,22 +55,30 @@ class VariabelResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->columns([
+            ->columns([  
+                Tables\Columns\TextColumn::make('nama')
+                ->searchable()
+                    ->label('Nama Variabel')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
+
                 Tables\Columns\TextColumn::make('dimensi.nama')
                     ->label('Dimensi'),
-
-                Tables\Columns\TextColumn::make('nama')
-                    ->label('Nama Variabel'),
 
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Deskripsi Variabel'),
                 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
+                    ->sortable()
                     ->label('Dibuat Pada'),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('dimensi_id')
+                    ->relationship('dimensi', 'nama')
+                    ->label('Dimensi'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

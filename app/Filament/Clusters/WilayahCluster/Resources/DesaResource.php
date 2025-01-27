@@ -55,18 +55,22 @@ class DesaResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('nama')
+                    ->searchable()    
+                    ->label('Nama'),
+
                 Tables\Columns\TextColumn::make('kecamatan.nama')
                     ->label('Kecamatan'),
-                
-                Tables\Columns\TextColumn::make('nama')
-                    ->label('Nama'),
-                
+
                 Tables\Columns\TextColumn::make('created_at')
+                    ->sortable()
                     ->label('Dibuat Pada'),
 
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('kecamatan_id')
+                    ->relationship('kecamatan', 'nama')
+                    ->label('Kecamatan'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

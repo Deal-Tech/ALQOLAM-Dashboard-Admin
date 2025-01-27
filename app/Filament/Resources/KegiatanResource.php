@@ -75,11 +75,7 @@ class KegiatanResource extends Resource
                     ->label('Kategori Kegiatan')
                     ->searchable()
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('imgfuture')
-                    ->searchable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('konten')
+                Tables\Columns\ImageColumn::make('imgfuture')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')

@@ -58,19 +58,23 @@ class KecamatanResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('nama')
+                    ->searchable()
+                    ->label('Nama Kecamatan'),
+                    
                 Tables\Columns\TextColumn::make('kabupaten.nama')
                     ->label('Kabupaten'),
-                
-                Tables\Columns\TextColumn::make('nama')
-                    ->label('Nama Kecamatan'),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->sortable()
                     ->dateTime()
                     ->label('Dibuat Pada'),
 
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('kabupaten_id')
+                    ->relationship('kabupaten', 'nama')
+                    ->label('Kabupaten'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

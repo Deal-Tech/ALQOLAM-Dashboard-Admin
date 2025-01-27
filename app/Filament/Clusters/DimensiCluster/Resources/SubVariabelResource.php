@@ -56,11 +56,20 @@ class SubVariabelResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('variabel.nama')
-                    ->label('Variabel'),
-                
                 Tables\Columns\TextColumn::make('nama')
-                    ->label('Nama Sub Variabel'),
+                    ->searchable()
+                    ->label('Nama Sub Variabel')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
+
+                Tables\Columns\TextColumn::make('variabel.nama')
+                    ->label('Variabel')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
                 
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Deskripsi'),
@@ -70,7 +79,9 @@ class SubVariabelResource extends Resource
                     ->label('Dibuat Pada'),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('variabel_id')
+                    ->relationship('variabel', 'nama'),
+
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

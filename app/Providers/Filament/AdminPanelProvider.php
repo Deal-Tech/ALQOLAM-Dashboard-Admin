@@ -24,7 +24,9 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->brandName('ALQOLAM')
+            ->brandLogo(asset('storage/logoALQOLAM.svg'))
+            ->brandLogoHeight('3rem')
+            ->favicon(asset('storage/logoalqolam.ico'))
             ->id('admin')
             ->path('admin')
             ->login()
@@ -33,13 +35,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-            ])
+            ->pages([])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                Widgets\AccountWidget::class,
-            ])
+            ->widgets([])
             ->discoverClusters(in: app_path('Filament/Clusters'), for: 'App\\Filament\\Clusters')
             ->middleware([
                 EncryptCookies::class,

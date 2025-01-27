@@ -96,14 +96,25 @@ class SurveyResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('pertanyaan')
+                    ->searchable()
+                    ->label('Pertanyaan'),
                 Tables\Columns\TextColumn::make('dimensi.nama')->label('Dimensi'),
                 Tables\Columns\TextColumn::make('variabel.nama')->label('Variabel'),
                 Tables\Columns\TextColumn::make('subvariabel.nama')->label('Sub Variabel'),
-                Tables\Columns\TextColumn::make('pertanyaan'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime(),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('dimensi_id')
+                    ->relationship('dimensi', 'nama')
+                    ->label('Dimensi'),
+                Tables\Filters\SelectFilter::make('variabel_id')
+                    ->relationship('variabel', 'nama')
+                    ->label('Variabel'),
+                Tables\Filters\SelectFilter::make('sub_variabel_id')
+                    ->relationship('subvariabel', 'nama')
+                    ->label('Sub Variabel'),
+
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
