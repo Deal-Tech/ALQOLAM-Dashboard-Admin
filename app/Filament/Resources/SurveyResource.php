@@ -61,9 +61,14 @@ class SurveyResource extends Resource
                     Forms\Components\Textarea::make('opsi_jawaban_3'),
                     Forms\Components\Textarea::make('opsi_jawaban_4'),
                     Forms\Components\Textarea::make('opsi_jawaban_5'),
+                    Forms\Components\Textarea::make('pembahasan')
+                        ->rows(4)
+                        ->columnSpan('full'),
+
             ])
             ->columns(2)
             ])
+            
             
             ->columns(2)
             ->columnSpan(['lg' => 2]),

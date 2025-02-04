@@ -21,6 +21,7 @@ class Survey extends Model
         'opsi_jawaban_3',
         'opsi_jawaban_4',
         'opsi_jawaban_5',
+        'pembahasan',
     ];
 
     public function dimensi()
