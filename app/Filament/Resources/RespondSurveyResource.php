@@ -12,6 +12,8 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Forms\Components\Toggle;
+
 
 class RespondSurveyResource extends Resource
 {
@@ -38,9 +40,15 @@ class RespondSurveyResource extends Resource
     public static function form(Form $form): Form
     {
         return $form
+        ->schema([
+            Forms\Components\Group::make()
             ->schema([
+            Forms\Components\Section::make('Respon Survey')
+                ->schema([
                 Forms\Components\Select::make('user_id')
-                    ->relationship('user', 'name')
+                    ->relationship('mahasiswa', 'nama_kelompok')
+                    ->required(),
+                Forms\Components\TextInput::make('nama_ketua')
                     ->required(),
                 Forms\Components\Select::make('kabupaten_id')
                     ->relationship('kabupaten', 'nama')
@@ -51,28 +59,74 @@ class RespondSurveyResource extends Resource
                 Forms\Components\Select::make('desa_id')
                     ->relationship('desa', 'nama')
                     ->required(),
-                Forms\Components\Select::make('survey_id')
-                    ->relationship('survey', 'pertanyaan')
-                    ->required(),
-                Forms\Components\Textarea::make('jawaban')
-                    ->required(),
-            ]);
+                
+                    
+            ])
+            ->columns(2)
+            ])
+            ->columns(2)
+            ->columnSpan(['lg' => 2]),
+
+            Forms\Components\Group::make()
+            ->schema([
+                Forms\Components\Section::make('Status')
+                ->schema([    
+                    Forms\Components\Toggle::make('is_compled')
+                        ->label('Konfirmasi Dosen')
+                        ->required(),
+                    Forms\Components\Toggle::make('is_published')
+                        ->label('Publikasikan')
+                        ->required(),
+                ])
+            ])
+            
+            ->columns(1)
+            ->columnSpan(['lg' => 1]),
+        ])
+        ->columns(3);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->query(
+                RespondSurvey::query()->where('is_compled', true)
+               
+            )
             ->columns([
-                Tables\Columns\TextColumn::make('user.name')->label('User'),
+                Tables\Columns\TextColumn::make('mahasiswa.nama_kelompok')->label('Kelompok'),
                 Tables\Columns\TextColumn::make('kabupaten.nama')->label('Kabupaten'),
                 Tables\Columns\TextColumn::make('kecamatan.nama')->label('Kecamatan'),
-                Tables\Columns\TextColumn::make('desa.nama')->label('Desa'),
-                Tables\Columns\TextColumn::make('survey.pertanyaan')->label('Pertanyaan Survei'),
-                Tables\Columns\TextColumn::make('jawaban')->label('Jawaban'),
-                Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
+                Tables\Columns\TextColumn::make('desa.nama')
+                    ->searchable()
+                    ->label('Desa'),
+                Tables\Columns\TextColumn::make('nama_ketua')->label('Nama Ketua'),
+                Tables\Columns\ToggleColumn::make('is_compled')->label('Konfirmasi Dosen'),
+                Tables\Columns\ToggleColumn::make('is_published')->label('Publikasikan'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->label('Dibuat Pada'),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->hidden()
+                    ->label('Diperbarui Pada'),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('is_compled')
+                    ->options([
+                        'true' => 'Sudah',
+                        'false' => 'Belum',
+                    ])
+                    ->label('Konfirmasi Dosen'),
+                Tables\Filters\SelectFilter::make('is_published')
+                    ->options([
+                        'true' => 'Sudah',
+                        'false' => 'Belum',
+                    ])
+                    ->label('Publikasikan'),
+
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -88,7 +142,7 @@ class RespondSurveyResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\RespondetailRelationManager::class,
         ];
     }
 

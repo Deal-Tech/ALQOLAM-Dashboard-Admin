@@ -17,13 +17,10 @@ class RespondSurvey extends Model
         'kecamatan_id',
         'desa_id',
         'survey_id',
-        'jawaban',
+        'nama_ketua',
+        'is_compled',
+        'is_published',
     ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
 
     public function kabupaten()
     {
@@ -43,5 +40,15 @@ class RespondSurvey extends Model
     public function survey()
     {
         return $this->belongsTo(Survey::class);
+    }
+
+    public function mahasiswa()
+    {
+        return $this->belongsTo(Mahasiswa::class, 'user_id');
+    }
+
+    public function respondetail()
+    {
+        return $this->hasMany(ResponDetail::class, 'respondsurvey_id');
     }
 }

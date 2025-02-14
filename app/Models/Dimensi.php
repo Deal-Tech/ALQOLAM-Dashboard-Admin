@@ -9,7 +9,7 @@ class Dimensi extends Model
 {
     use HasFactory;
 
-    protected $table = 'Dimensi'; 
+    protected $table = 'dimensi'; 
 
     protected $fillable = ['nama', 'deskripsi'];
 
