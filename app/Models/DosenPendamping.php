@@ -28,7 +28,12 @@ class DosenPendamping extends Authenticatable implements FilamentUser, HasName
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return true; 
+        
+        if ($panel->getId() === 'admin') {
+            return str_ends_with($this->email, '@alqolam.ac.id') && $this->hasVerifiedEmail();
+        }
+ 
+        return true;
     }
 
     public function getFilamentName(): string 
