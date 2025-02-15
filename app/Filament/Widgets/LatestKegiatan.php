@@ -23,7 +23,12 @@ class LatestKegiatan extends BaseWidget
                     ->limit(10)
             )
             ->columns([
-                Tables\Columns\TextColumn::make('judul')->label('Judul Kegiatan'),
+                Tables\Columns\TextColumn::make('judul')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    })
+                    ->label('Judul Kegiatan'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
             ]);
     }

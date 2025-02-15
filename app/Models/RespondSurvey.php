@@ -18,6 +18,7 @@ class RespondSurvey extends Model
         'desa_id',
         'survey_id',
         'nama_ketua',
+        'dosenpendamping_id',
         'is_compled',
         'is_published',
     ];
@@ -50,5 +51,9 @@ class RespondSurvey extends Model
     public function respondetail()
     {
         return $this->hasMany(ResponDetail::class, 'respondsurvey_id');
+    }
+    public function dosenpendamping()
+    {
+        return $this->belongsTo(DosenPendamping::class, 'dosenpendamping_id');
     }
 }

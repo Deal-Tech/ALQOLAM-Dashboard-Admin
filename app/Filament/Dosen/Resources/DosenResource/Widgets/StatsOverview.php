@@ -12,7 +12,7 @@ class StatsOverview extends BaseWidget
 {
     protected function getStats(): array
     {
-        // Get counts from database
+       
         $dimensiCount = Dimensi::count();
         $variabelCount = Variabel::count();
         $subVariabelCount = SubVariabel::count();

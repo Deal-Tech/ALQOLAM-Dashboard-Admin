@@ -94,7 +94,14 @@ class RespondSurveyResource extends Resource
                
             )
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('mahasiswa.nama_kelompok')->label('Kelompok'),
+                Tables\Columns\TextColumn::make('dosenpendamping.nama_lengkap')
+                    ->label('Dosen Pendamping'),
                 Tables\Columns\TextColumn::make('kabupaten.nama')->label('Kabupaten'),
                 Tables\Columns\TextColumn::make('kecamatan.nama')->label('Kecamatan'),
                 Tables\Columns\TextColumn::make('desa.nama')

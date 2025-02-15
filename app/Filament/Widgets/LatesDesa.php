@@ -12,7 +12,7 @@ class LatesDesa extends BaseWidget
 
     protected static ?int $sort = 3;
 
-    protected static ?string $heading = 'Desa baru ditambah';
+    protected static ?string $heading = 'Desa terbaru';
 
     public function table(Table $table): Table
     {

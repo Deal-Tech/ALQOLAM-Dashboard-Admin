@@ -101,13 +101,39 @@ class SurveyResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
                 Tables\Columns\TextColumn::make('pertanyaan')
                     ->searchable()
-                    ->label('Pertanyaan'),
+                    ->label('Pertanyaan')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
                 Tables\Columns\TextColumn::make('dimensi.nama')->label('Dimensi'),
-                Tables\Columns\TextColumn::make('variabel.nama')->label('Variabel'),
-                Tables\Columns\TextColumn::make('subvariabel.nama')->label('Sub Variabel'),
-                Tables\Columns\TextColumn::make('created_at')->dateTime(),
+                Tables\Columns\TextColumn::make('variabel.nama')
+                    ->label('Variabel')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
+                Tables\Columns\TextColumn::make('subvariabel.nama')
+                    ->label('Sub Variabel')
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->label('Dibuat Pada'),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->dateTime()
+                    ->label('Diperbarui Pada')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('dimensi_id')

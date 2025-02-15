@@ -4,27 +4,34 @@ namespace App\Filament\Widgets;
  
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use App\Models\Dimensi;
+use App\Models\Variabel;
+use App\Models\SubVariabel;
  
 class StatsOverview extends BaseWidget
 {
     protected function getStats(): array
     {
+       
+        $dimensiCount = Dimensi::count();
+        $variabelCount = Variabel::count();
+        $subVariabelCount = SubVariabel::count();
+
         return [
-            Stat::make('Dimensi', '192.1k')
-                ->description('32k increase')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart([7, 2, 10, 3, 15, 4, 17])
+            Stat::make('Dimensi', $dimensiCount)
+                ->description('Total Dimensi')
+                ->descriptionIcon('heroicon-o-document')
                 ->color('success'),
-            Stat::make('Variabel', '21%')
-                ->description('7% increase')
-                ->descriptionIcon('heroicon-m-arrow-trending-down')
-                ->chart([7, 2, 10, 3, 15, 4, 17])
-                ->color('danger'),
-            Stat::make('Sub Variabel', '3:12')
-                ->description('3% increase')
-                ->descriptionIcon('heroicon-m-arrow-trending-up')
-                ->chart([7, 2, 10, 3, 15, 4, 17])
-                ->color('success'),
+            
+            Stat::make('Variabel', $variabelCount)
+                ->description('Total Variabel')
+                ->descriptionIcon('heroicon-o-user-group')
+                ->color('primary'),
+            
+            Stat::make('Indikator', $subVariabelCount)
+                ->description('Total Indikator')
+                ->descriptionIcon('heroicon-o-cube')
+                ->color('info'),
         ];
     }
 }

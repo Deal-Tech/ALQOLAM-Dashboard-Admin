@@ -24,7 +24,7 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->brandLogo(asset('storage/LOGOALQOLAM.svg'))
+            ->brandLogo(asset('storage/logoalqolamresmi.png'))
             ->brandLogoHeight('3rem')
             ->favicon(asset('storage/logoalqolam.ico'))
             ->id('admin')
