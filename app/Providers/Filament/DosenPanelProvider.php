@@ -37,7 +37,7 @@ class DosenPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
-            ->discoverWidgets(in: app_path('Filament/Dosen/Widgets'), for: 'App\\Filament\\Dosen\\Widgets')
+            ->discoverWidgets(in: app_path('Filament/Dosen/Resources/DosenResource/Widgets'), for: 'App\Filament\Dosen\Resources\DosenResource\Widgets')
             ->widgets([])
             ->middleware([
                 EncryptCookies::class,

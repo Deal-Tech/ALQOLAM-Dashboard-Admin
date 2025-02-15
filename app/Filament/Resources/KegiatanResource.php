@@ -69,13 +69,17 @@ class KegiatanResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('judul')
                     ->searchable()
-                    ->sortable(),
+                    ->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
+                    }),
                 
                 Tables\Columns\TextColumn::make('kategorikegiatan.nama')
                     ->label('Kategori Kegiatan')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\ImageColumn::make('imgfuture')
+                    ->label('Gambar Utama')
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')

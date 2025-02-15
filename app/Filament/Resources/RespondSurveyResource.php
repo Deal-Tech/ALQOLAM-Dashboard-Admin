@@ -101,7 +101,7 @@ class RespondSurveyResource extends Resource
                     ->searchable()
                     ->label('Desa'),
                 Tables\Columns\TextColumn::make('nama_ketua')->label('Nama Ketua'),
-                Tables\Columns\ToggleColumn::make('is_compled')->label('Konfirmasi Dosen'),
+                
                 Tables\Columns\ToggleColumn::make('is_published')->label('Publikasikan'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -110,16 +110,11 @@ class RespondSurveyResource extends Resource
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
-                    ->hidden()
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Diperbarui Pada'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('is_compled')
-                    ->options([
-                        'true' => 'Sudah',
-                        'false' => 'Belum',
-                    ])
-                    ->label('Konfirmasi Dosen'),
+                
                 Tables\Filters\SelectFilter::make('is_published')
                     ->options([
                         'true' => 'Sudah',
