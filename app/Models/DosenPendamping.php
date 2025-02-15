@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
+use Filament\Panel;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class DosenPendamping extends Model
+class DosenPendamping extends Authenticatable implements FilamentUser, HasName
 {
-    use HasFactory;
+    use Notifiable;
 
     protected $table = 'dosenpendamping';
 
@@ -21,10 +23,21 @@ class DosenPendamping extends Model
 
     protected $hidden = [
         'password',
+        'remember_token',
     ];
 
-    public function setPasswordAttribute($value)
+    public function canAccessPanel(Panel $panel): bool
     {
-        $this->attributes['password'] = Hash::make($value);
+        return true; 
+    }
+
+    public function getFilamentName(): string 
+    {
+        return $this->nama_lengkap ?? $this->email ?? 'Dosen';
+    }
+
+    public function getName(): string
+    {
+        return $this->getFilamentName();
     }
 }
