@@ -20,7 +20,7 @@ class RespondAssetDesaResource extends Resource
 {
     protected static ?string $model = RespondAssetDesa::class;
 
-    protected static ?string $navigationIcon = 'heroicon-m-rectangle-group';
+    protected static ?string $navigationIcon = 'heroicon-c-bars-3-bottom-right';
 
     protected static ?string $navigationGroup = 'Hasil';
 
@@ -154,7 +154,7 @@ class RespondAssetDesaResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\TextEntry::make('user.nama_kelompok')
+                Infolists\Components\TextEntry::make('mahasiswa.nama_kelompok')
                     ->label('Kelompok'),
                 
                 Infolists\Components\TextEntry::make('desa.nama')

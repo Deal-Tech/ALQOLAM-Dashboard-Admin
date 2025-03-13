@@ -4,15 +4,21 @@ namespace App\Filament\Resources\RespondAssetDesaResource\RelationManagers;
 
 use App\Models\AssetDesa;
 use App\Models\AssetDesaData;
+use App\Models\AssetDesaJenisKelamin; // This was also missing
 use App\Models\AssetDesaSubJenis;
 use App\Models\AssetDesaSubJenisData;
+use App\Models\RespondAssetDesaDetail; // Add this import
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model; // This was missing for the group function
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
+use Filament\Tables\Grouping\Group;
+
 
 class AsetdesaRelationManager extends RelationManager
 {
@@ -109,33 +115,73 @@ class AsetdesaRelationManager extends RelationManager
     {
         return $table
             ->columns([
+                // This column will show the display with question & answer combined
+                Tables\Columns\TextColumn::make('data_display')
+                    ->label('')
+                    ->formatStateUsing(function ($state, $record) {
+                        if (!$record || !$record->assetDesa) return '-';
+                        
+                        $namaData = '';
+                        $jawaban = '';
+                        
+                        // Data reguler (is_data=true, is_sub_jenis=false)
+                        if ($record->assetDesa->is_data && !$record->assetDesa->is_sub_jenis) {
+                            $namaData = $record->assetDesaData?->nama ?? 'Tidak ada nama data';
+                            $dataResponse = $record->data->first();
+                            $jawaban = $dataResponse ? $dataResponse->jawaban : $record->nilai;
+                        } 
+                        // Data sub jenis (is_data=true, is_sub_jenis=true)
+                        elseif ($record->assetDesa->is_data && $record->assetDesa->is_sub_jenis) {
+                            $subJenisName = $record->assetDesaSubJenis?->subjenis ?? '';
+                            $dataName = $record->assetDesaSubJenisData?->nama ?? 'Tidak ada nama data';
+                            $namaData = $subJenisName ? "$subJenisName: $dataName" : $dataName;
+                            
+                            $subJenisData = $record->subJenisData->first();
+                            $jawaban = $subJenisData ? $subJenisData->jawaban : $record->nilai;
+                        } 
+                        // Jenis kelamin (is_jenis_kelamin=true)
+                        elseif ($record->assetDesa->is_jenis_kelamin) {
+                            // Get appropriate name
+                            $jenisKelaminMaster = AssetDesaJenisKelamin::where('assetdesa_id', $record->assetdesa_id)->first();
+                            $namaData = $jenisKelaminMaster->nama ?? 'Jenis Kelamin';
+                            
+                            // Get data name if applicable
+                            if ($record->assetDesaData) {
+                                $namaData .= ': ' . $record->assetDesaData->nama;
+                            }
+                            
+                            $jenisKelamin = $record->jenisKelamin->first();
+                            if ($jenisKelamin) {
+                                $lakilaki = number_format($jenisKelamin->jawaban_laki_laki ?? 0);
+                                $perempuan = number_format($jenisKelamin->jawaban_perempuan ?? 0);
+                                $total = number_format(($jenisKelamin->jawaban_laki_laki ?? 0) + ($jenisKelamin->jawaban_perempuan ?? 0));
+                                $jawaban = "L: $lakilaki, P: $perempuan, Total: $total";
+                            } else {
+                                $jawaban = 'Tidak ada data';
+                            }
+                        }
+                        
+                        // Format as: name >> answer
+                        return new HtmlString(
+                            "<div class='flex items-center gap-2'>
+                                <span class='font-medium text-gray-900'>$namaData</span>
+                                <span class='text-gray-400 mx-1'>»</span>
+                                <span class='text-primary-600 font-medium'>$jawaban</span>
+                            </div>"
+                        );
+                    }),
+                    
+                // Hidden column just for the purpose of having something to group by
                 Tables\Columns\TextColumn::make('assetDesa.jenis')
                     ->label('Jenis Asset')
-                    ->sortable()
-                    ->searchable(),
-                
-                Tables\Columns\TextColumn::make('assetDesaData.nama')
-                    ->label('Data')
-                    ->placeholder('-')
-                    ->searchable(),
-                
-                Tables\Columns\TextColumn::make('assetDesaSubJenis.subjenis')
-                    ->label('Sub Jenis')
-                    ->placeholder('-')
-                    ->searchable(),
-                
-                Tables\Columns\TextColumn::make('assetDesaSubJenisData.nama')
-                    ->label('Data Sub Jenis')
-                    ->placeholder('-'),
-                
-                Tables\Columns\TextColumn::make('nilai')
-                    ->label('Nilai/Jumlah'),
-                
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->groups([
+                Group::make('assetDesa.jenis')
+                    ->label('Jenis Asset')
+                    ->collapsible(),
+            ])
+            ->defaultGroup('assetDesa.jenis')
             ->filters([
                 Tables\Filters\SelectFilter::make('assetdesa_id')
                     ->relationship('assetDesa', 'jenis')
@@ -153,6 +199,29 @@ class AsetdesaRelationManager extends RelationManager
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->striped();
+    }
+    
+    protected function getTableQuery(): Builder
+    {
+        $owner = $this->getOwnerRecord();
+        
+        if (!$owner) {
+            return RespondAssetDesaDetail::query()->whereRaw('1 = 0');
+        }
+        
+        return RespondAssetDesaDetail::query()
+            ->where('respond_assetdesa_id', $owner->id)
+            ->with([
+                'assetDesa',
+                'assetDesaData',
+                'assetDesaSubJenis',
+                'assetDesaSubJenisData',
+                'data',
+                'subJenisData',
+                'jenisKelamin',
             ]);
     }
+
 }
