@@ -19,6 +19,7 @@ use Filament\Forms\Components\Toggle;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\AssetDesaResource\Pages\CreateAssetDesa;
 use App\Filament\Resources\AssetDesaResource\Pages\EditAssetDesa;
+use Filament\Support\Enums\FontWeight;
 
 class AssetDesaResource extends Resource
 {
@@ -203,75 +204,81 @@ class AssetDesaResource extends Resource
         return $infolist
             ->schema([
                 TextEntry::make('jenis')
-                    ->label('Jenis Asset'),
+                    ->label('Jenis Asset')
+                    ->size(TextEntry\TextEntrySize::Large)
+                    ->weight(FontWeight::Bold)
+                    ->columnSpanFull(),
+    
+                TextEntry::make('created_at')
+                    ->label('Dibuat Pada')
+                    ->dateTime()
+                    ->columnSpanFull(),
                     
-                TextEntry::make('data')
-                    ->label('Data')
+                \Filament\Infolists\Components\Section::make('Data')
                     ->visible(fn ($record) => $record->is_data && !$record->is_sub_jenis)
-                    ->formatStateUsing(function ($state, $record) {
-                        try {
-                            // Format data items with multiple answer indicator
-                            $dataItems = $record->data->map(function($item) {
-                                $multipleLabel = $item->is_multiple_answer ? ' (Multiple)' : '';
-                                return $item->nama . $multipleLabel;
-                            })->toArray();
-                            
-                            if (empty($dataItems)) {
-                                return '-';
-                            }
-                            
-                            return "- " . implode("\n- ", $dataItems);
-                        } catch (\Exception $e) {
-                            return "Error: " . $e->getMessage();
-                        }
-                    })
-                    ->markdown(),
+                    ->schema([
+                        \Filament\Infolists\Components\RepeatableEntry::make('data')
+                            ->label('')
+                            ->schema([
+                                TextEntry::make('nama')
+                                    ->label('Nama Data'),
+                                TextEntry::make('is_multiple_answer')
+                                    ->label('Multiple Answer')
+                                    ->badge()
+                                    ->color(fn (bool $state): string => $state ? 'success' : 'gray')
+                                    ->formatStateUsing(fn (bool $state) => $state ? 'Ya' : 'Tidak'),
+                            ])
+                            ->columns(2)
+                            ->grid(2)
+                            ->state(fn ($record) => $record->data ?? [])
+                    ])
+                    ->collapsible()
+                    ->columnSpanFull(),
                     
-                TextEntry::make('subJenis')
-                    ->label('Data dengan Sub')
+                \Filament\Infolists\Components\Section::make('Data dengan Sub Jenis')
                     ->visible(fn ($record) => $record->is_data && $record->is_sub_jenis)
-                    ->formatStateUsing(function ($state, $record) {
-                        try {
-                            $result = [];
-                            foreach ($record->subJenis as $subJenis) {
-                                // Format data items with multiple answer indicator
-                                $dataItems = $subJenis->data->map(function($data) {
-                                    $multipleLabel = $data->is_multiple_answer ? ' (Multiple)' : '';
-                                    return $data->nama . $multipleLabel;
-                                })->toArray();
-                                
-                                if (empty($dataItems)) {
-                                    $result[] = "### {$subJenis->subjenis}";
-                                } else {
-                                    $result[] = "### {$subJenis->subjenis}\n- " . implode("\n- ", $dataItems);
-                                }
-                            }
-                            
-                            return empty($result) ? '-' : implode("\n\n", $result);
-                        } catch (\Exception $e) {
-                            return "Error: " . $e->getMessage();
-                        }
-                    })
-                    ->markdown(),
+                    ->schema([
+                        \Filament\Infolists\Components\RepeatableEntry::make('subJenis')
+                            ->schema([
+                                TextEntry::make('subjenis')
+                                    ->label('Nama Sub Jenis')
+                                    ->weight(FontWeight::Bold)
+                                    ->size(TextEntry\TextEntrySize::Large),
+                                    
+                                \Filament\Infolists\Components\RepeatableEntry::make('data')
+                                    ->label('Data')
+                                    ->schema([
+                                        TextEntry::make('nama')
+                                            ->label('Nama Data'),
+                                        TextEntry::make('is_multiple_answer')
+                                            ->label('Multiple Answer')
+                                            ->badge()
+                                            ->color(fn (bool $state): string => $state ? 'success' : 'gray')
+                                            ->formatStateUsing(fn (bool $state) => $state ? 'Ya' : 'Tidak'),
+                                    ])
+                                    ->columns(2)
+                                    ->grid(2)
+                                    ->state(fn ($record) => $record->data ?? [])
+                            ])
+                            // Remove the collapsible() method from RepeatableEntry as it doesn't exist
+                            ->state(fn ($record) => $record->subJenis ?? [])
+                    ])
+                    ->collapsible() // Keep collapsible on the Section
+                    ->columnSpanFull(),
                     
-                TextEntry::make('jenisKelamin')
-                    ->label('Jenis Kelamin')
+                \Filament\Infolists\Components\Section::make('Jenis Kelamin')
                     ->visible(fn ($record) => $record->is_jenis_kelamin)
-                    ->formatStateUsing(function ($state, $record) {
-                        try {
-                            // Format jenis kelamin as a list too
-                            $items = $record->jenisKelamin->pluck('nama')->toArray();
-                            
-                            if (empty($items)) {
-                                return '-';
-                            }
-                            
-                            return "- " . implode("\n- ", $items);
-                        } catch (\Exception $e) {
-                            return "Error: " . $e->getMessage();
-                        }
-                    })
-                    ->markdown(),
+                    ->schema([
+                        \Filament\Infolists\Components\RepeatableEntry::make('jenisKelamin')
+                            ->schema([
+                                TextEntry::make('nama')
+                                    ->label(''),
+                            ])
+                            ->columns(1)
+                            ->state(fn ($record) => $record->jenisKelamin ?? [])
+                    ])
+                    ->collapsible() // Keep collapsible on the Section
+                    ->columnSpanFull(),
             ])
             ->columns(1);
     }
