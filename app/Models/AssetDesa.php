@@ -7,41 +7,32 @@ use Illuminate\Database\Eloquent\Model;
 class AssetDesa extends Model
 {
     protected $table = 'assetdesa';
-    protected $fillable = ['data'];
-
-    protected $casts = [
-        'data' => 'array'
+    
+    protected $fillable = [
+        'jenis', 
+        'is_data',
+        'is_sub_jenis',
+        'is_jenis_kelamin'
     ];
-
-    public function getJenisAttribute()
+    
+    protected $casts = [
+        'is_data' => 'boolean',
+        'is_sub_jenis' => 'boolean',
+        'is_jenis_kelamin' => 'boolean',
+    ];
+    
+    public function data()
     {
-        $data = is_array($this->data) ? $this->data : json_decode($this->data, true);
-        return $data['jenis'] ?? '-';
+        return $this->hasMany(AssetDesaData::class, 'assetdesa_id');
     }
-
-    public function getDataArrayAttribute()
+    
+    public function subJenis()
     {
-        $data = is_array($this->data) ? $this->data : json_decode($this->data, true);
-        $items = $data['data'] ?? [];
-        return array_map(fn($item) => ['item' => $item], $items);
+        return $this->hasMany(AssetDesaSubJenis::class, 'assetdesa_id');
     }
-
-    public function getTipeArrayAttribute()
+    
+    public function jenisKelamin()
     {
-        $data = is_array($this->data) ? $this->data : json_decode($this->data, true);
-        $items = $data['tipe'] ?? [];
-        return array_map(fn($item) => ['item' => $item], $items);
-    }
-
-    public function getFormattedDataAttribute()
-    {
-        $data = is_array($this->data) ? $this->data : json_decode($this->data, true);
-        return isset($data['data']) ? implode(', ', $data['data']) : '-';
-    }
-
-    public function getFormattedTipeAttribute()
-    {
-        $data = is_array($this->data) ? $this->data : json_decode($this->data, true);
-        return isset($data['tipe']) ? implode(', ', $data['tipe']) : '-';
+        return $this->hasMany(AssetDesaJenisKelamin::class, 'assetdesa_id');
     }
 }

@@ -14,161 +14,148 @@ use Filament\Infolists\Infolist;
 use Filament\Forms\Components\Card;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\Toggle;
 use Illuminate\Database\Eloquent\Model;
-
+use App\Filament\Resources\AssetDesaResource\Pages\CreateAssetDesa;
+use App\Filament\Resources\AssetDesaResource\Pages\EditAssetDesa;
 
 class AssetDesaResource extends Resource
 {
     protected static ?string $model = AssetDesa::class;
 
     protected static ?string $navigationIcon = 'heroicon-m-ellipsis-horizontal';
-
     protected static ?string $navigationGroup = 'Asset Desa';
-
     protected static ?int $navigationSort = 1;
-
     protected static ?string $navigationLabel = 'Data Asset';
-
     protected static ?string $slug = 'asset-desa';
 
-    public static function getLabel(): string
-    {
-        return 'Data Asset';
-    }
-
-    public static function getPluralLabel(): string
-    {
-        return 'Data Asset';
-    }
-
     public static function form(Form $form): Form 
-{
-    return $form
-        ->schema([
-            Card::make()
-                ->schema([
-                TextInput::make('temp_jenis')
-                ->required()
-                ->label('Jenis Asset')
-                ->default(function (?Model $record) {
-                    if (!$record) return '';
-                    
-                    $data = is_string($record->data) ? json_decode($record->data, true) : $record->data;
-                    return $data['jenis'] ?? '';
-                })
-                ->live()
-                ->afterStateHydrated(function ($component, $state, ?Model $record) {
-                    if (!$record) return;
-                    
-                    $data = is_string($record->data) ? json_decode($record->data, true) : $record->data;
-                    $component->state($data['jenis'] ?? '');
-                })
-                ->afterStateUpdated(function (string $state, callable $get, callable $set) {
-                    $currentData = json_decode($get('data') ?? '{}', true);
-                    $currentData['jenis'] = $state;
-                    $set('data', json_encode($currentData));
-                }),
-
-                Repeater::make('temp_data_simple')
-                        ->schema([
-                            TextInput::make('item')
+    {
+        return $form
+            ->schema([
+                Card::make()
+                    ->schema([
+                        TextInput::make('jenis')
+                            ->required()
+                            ->label('Jenis Asset'),
+                            
+                        Toggle::make('is_data')
+                            ->label('Is Data')
+                            ->default(true),
+                            
+                        Toggle::make('is_sub_jenis')
+                            ->label('Is Sub Jenis')
+                            ->default(false),
+                            
+                        Toggle::make('is_jenis_kelamin')
+                            ->label('Is Jenis Kelamin')
+                            ->default(false),
+                            
+                        Repeater::make('temp_data_simple')
+                            ->schema([
+                                TextInput::make('item')
                                     ->required()
-                                    ->label('Data')
+                                    ->label('Data'),
+                                Checkbox::make('is_multiple_answer')
+                                    ->label('Multiple Answer')
+                                    ->default(false)
                             ])
                             ->label('Data Tanpa Sub')
                             ->addActionLabel('Tambah Data')
                             ->createItemButtonLabel('Tambah Data Baru')
-                            ->defaultItems(0)
-                            ->dehydrated(false)
+                            ->visible(fn (callable $get) => $get('is_data') && !$get('is_sub_jenis'))
+                            ->reactive()
                             ->afterStateHydrated(function (Repeater $component, $state, ?Model $record) {
                                 if (!$record) return;
                                 
-                                $data = is_string($record->data) ? json_decode($record->data, true) : $record->data;
-                                $simpleData = collect($data['data'] ?? [])
-                                    ->filter(fn($item) => !is_array($item))
-                                    ->map(fn($item) => ['item' => $item])
-                                    ->toArray();
-                                    
+                                // Get existing simple data
+                                $simpleData = $record->data->map(function($item) {
+                                    return [
+                                        'item' => $item->nama,
+                                        'is_multiple_answer' => (bool)$item->is_multiple_answer
+                                    ];
+                                })->toArray();
+                                
                                 $component->state($simpleData);
                             })
-                            ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                                $currentData = json_decode($get('data') ?? '{}', true);
+                            ->dehydrated(false),
+                            
+                        Repeater::make('temp_data_with_sub')
+                            ->schema([
+                                TextInput::make('nama_subjenis')
+                                    ->required()
+                                    ->label('Nama Sub Jenis'),
+                                Repeater::make('data')
+                                    ->schema([
+                                        TextInput::make('item')
+                                            ->required()
+                                            ->label('Data'),
+                                        Checkbox::make('is_multiple_answer')
+                                            ->label('Multiple Answer')
+                                            ->default(false)
+                                    ])
+                                    ->label('Data')
+                                    ->addActionLabel('Tambah Data')
+                                    ->createItemButtonLabel('Tambah Data Baru')
+                                    ->collapsible()
+                            ])
+                            ->label('Data Dengan Sub')
+                            ->addActionLabel('Tambah Sub Jenis')
+                            ->createItemButtonLabel('Tambah Sub Jenis Baru')
+                            ->visible(fn (callable $get) => $get('is_data') && $get('is_sub_jenis'))
+                            ->reactive()
+                            ->afterStateHydrated(function (Repeater $component, $state, ?Model $record) {
+                                if (!$record) return;
                                 
-                                $subData = collect($currentData['data'] ?? [])
-                                    ->filter(fn($item) => is_array($item) && isset($item['nama_subjenis']))
-                                    ->values()
-                                    ->toArray();
+                                // Get existing sub data
+                                $subData = $record->subJenis->map(function($subJenis) {
+                                    return [
+                                        'nama_subjenis' => $subJenis->subjenis,
+                                        'data' => $subJenis->data->map(function($data) {
+                                            return [
+                                                'item' => $data->nama,
+                                                'is_multiple_answer' => (bool)$data->is_multiple_answer
+                                            ];
+                                        })->toArray()
+                                    ];
+                                })->toArray();
                                 
-                                $currentData['data'] = array_values(array_merge(
-                                    collect($state)->pluck('item')->toArray(),
-                                    $subData
-                                ));
-                                
-                                $set('data', json_encode($currentData));
-                            }),
-
-                Repeater::make('temp_data_with_sub')
-                    ->schema([
-                        TextInput::make('nama_subjenis')
-                            ->required()
-                            ->label('Nama Sub Jenis'),
-                        Repeater::make('data')
+                                $component->state($subData);
+                            })
+                            ->dehydrated(false),
+                            
+                        Repeater::make('temp_jenis_kelamin')
                             ->schema([
                                 TextInput::make('item')
                                     ->required()
-                                    ->label('Data')
+                                    ->label('Jenis Kelamin')
                             ])
-                            ->defaultItems(0)
-                            ->collapsible()
-                    ])
-                    ->label('Data Dengan Sub')
-                    ->addActionLabel('Tambah Sub Jenis')
-                    ->createItemButtonLabel('Tambah Sub Jenis Baru')
-                    ->defaultItems(0)
-                    ->dehydrated(false)
-                    ->afterStateHydrated(function (Repeater $component, $state, ?Model $record) {
-                        if (!$record) return;
-                        
-                        $data = is_string($record->data) ? json_decode($record->data, true) : $record->data;
-                        $subData = collect($data['data'] ?? [])
-                            ->filter(fn($item) => is_array($item) && isset($item['nama_subjenis']))
-                            ->map(function ($item) {
-                                return [
-                                    'nama_subjenis' => $item['nama_subjenis'],
-                                    'data' => collect($item['data'] ?? [])->map(fn($d) => ['item' => $d])->toArray()
-                                ];
+                            ->label('Jenis Kelamin')
+                            ->addActionLabel('Tambah Jenis Kelamin')
+                            ->createItemButtonLabel('Tambah Opsi Jenis Kelamin')
+                            ->visible(fn (callable $get) => $get('is_jenis_kelamin'))
+                            ->reactive()
+                            ->afterStateHydrated(function (Repeater $component, $state, ?Model $record) {
+                                if (!$record) return;
+                                
+                                try {
+                                    // Get existing jenis kelamin
+                                    $jenisKelamin = $record->jenisKelamin->map(function($item) {
+                                        return ['item' => $item->nama];
+                                    })->toArray();
+                                    
+                                    $component->state($jenisKelamin);
+                                } catch (\Exception $e) {
+                                    // Log error or handle it
+                                    // For debugging purposes
+                                }
                             })
-                            ->toArray();
-                            
-                        $component->state($subData);
-                    })
-                    ->afterStateUpdated(function ($state, callable $get, callable $set) {
-                        $currentData = json_decode($get('data') ?? '{}', true);
-                        
-                        $simpleData = collect($currentData['data'] ?? [])
-                            ->filter(fn($item) => !is_array($item))
-                            ->values()
-                            ->toArray();
-                        
-                        $currentData['data'] = array_values(array_merge(
-                        $simpleData,
-                        collect($state)->map(function ($item) {
-                            return [
-                                'nama_subjenis' => $item['nama_subjenis'],
-                                'data' => collect($item['data'] ?? [])->pluck('item')->toArray()
-                                ];
-                            })->toArray()
-                        ));
-                        
-                        $set('data', json_encode($currentData));
-                    }),
-
-                        Forms\Components\Hidden::make('data'),
-                        ])
-                        ->columns(1),
-                        ]);
-}
-
+                            ->dehydrated(false),
+                    ])
+                    ->columns(1),
+            ]);
+    }
 
     public static function table(Table $table): Table
     {
@@ -179,10 +166,23 @@ class AssetDesaResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('jenis')
                     ->label('Jenis Asset')
-                    ->formatStateUsing(function ($state) {
-                        return $state ?? '-';
-                    })
-                    ->searchable(),
+                    ->searchable()->formatStateUsing(function ($state) {
+                        $words = explode(' ', $state);
+                        return implode(' ', array_slice($words, 0, 6)) . (count($words) > 10 ? '...' : '');
+                    }),
+                Tables\Columns\IconColumn::make('is_data')
+                    ->boolean()
+                    ->label('Is Data'),
+                Tables\Columns\IconColumn::make('is_sub_jenis')
+                    ->boolean()
+                    ->label('Is Sub'),
+                Tables\Columns\IconColumn::make('is_jenis_kelamin')
+                    ->boolean()
+                    ->label('Is Jenis Kelamin'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->label('Dibuat Pada'),
             ])
             ->filters([
                 //
@@ -199,53 +199,82 @@ class AssetDesaResource extends Resource
     }
 
     public static function infolist(Infolist $infolist): Infolist
-{
-    return $infolist
-        ->schema([
-            TextEntry::make('data')
-                ->label('Jenis Asset')
-                ->formatStateUsing(fn ($state) => 
-                    is_string($state) 
-                        ? json_decode($state, true)['jenis'] ?? '-' 
-                        : $state['jenis'] ?? '-'
-                ),
-            TextEntry::make('data')
-                ->label('Data')
-                ->formatStateUsing(function ($state) {
-                    if (is_string($state)) {
-                        $state = json_decode($state, true);
-                    }
-                    if (!isset($state['data'])) return '-';
+    {
+        return $infolist
+            ->schema([
+                TextEntry::make('jenis')
+                    ->label('Jenis Asset'),
                     
-                    $result = [];
-                    foreach ($state['data'] as $item) {
-                        if (is_array($item) && isset($item['nama_subjenis'])) {
-                            $subData = implode(', ', $item['data'] ?? []);
-                            $result[] = "{$item['nama_subjenis']}: {$subData}";
-                        } else {
-                            $result[] = $item;
+                TextEntry::make('data')
+                    ->label('Data')
+                    ->visible(fn ($record) => $record->is_data && !$record->is_sub_jenis)
+                    ->formatStateUsing(function ($state, $record) {
+                        try {
+                            // Format data items with multiple answer indicator
+                            $dataItems = $record->data->map(function($item) {
+                                $multipleLabel = $item->is_multiple_answer ? ' (Multiple)' : '';
+                                return $item->nama . $multipleLabel;
+                            })->toArray();
+                            
+                            if (empty($dataItems)) {
+                                return '-';
+                            }
+                            
+                            return "- " . implode("\n- ", $dataItems);
+                        } catch (\Exception $e) {
+                            return "Error: " . $e->getMessage();
                         }
-                    }
+                    })
+                    ->markdown(),
                     
-                    return implode("\n", $result);
-                })
-                ->markdown(),
-            TextEntry::make('data')
-                ->label('Jenis Kelamin')
-                ->formatStateUsing(function ($state) {
-                    $data = is_string($state) ? json_decode($state, true) : $state;
-                    $jenisKelamin = $data['jenis_kelamin'] ?? [];
-                    return !empty($jenisKelamin) ? implode(', ', $jenisKelamin) : null;
-                })
-                ->visible(function ($state) {
-                    $data = is_string($state) ? json_decode($state, true) : $state;
-                    return !empty($data['jenis_kelamin'] ?? []);
-                })
-        ])
-        ->columns(1);
-}
-
-
+                TextEntry::make('subJenis')
+                    ->label('Data dengan Sub')
+                    ->visible(fn ($record) => $record->is_data && $record->is_sub_jenis)
+                    ->formatStateUsing(function ($state, $record) {
+                        try {
+                            $result = [];
+                            foreach ($record->subJenis as $subJenis) {
+                                // Format data items with multiple answer indicator
+                                $dataItems = $subJenis->data->map(function($data) {
+                                    $multipleLabel = $data->is_multiple_answer ? ' (Multiple)' : '';
+                                    return $data->nama . $multipleLabel;
+                                })->toArray();
+                                
+                                if (empty($dataItems)) {
+                                    $result[] = "### {$subJenis->subjenis}";
+                                } else {
+                                    $result[] = "### {$subJenis->subjenis}\n- " . implode("\n- ", $dataItems);
+                                }
+                            }
+                            
+                            return empty($result) ? '-' : implode("\n\n", $result);
+                        } catch (\Exception $e) {
+                            return "Error: " . $e->getMessage();
+                        }
+                    })
+                    ->markdown(),
+                    
+                TextEntry::make('jenisKelamin')
+                    ->label('Jenis Kelamin')
+                    ->visible(fn ($record) => $record->is_jenis_kelamin)
+                    ->formatStateUsing(function ($state, $record) {
+                        try {
+                            // Format jenis kelamin as a list too
+                            $items = $record->jenisKelamin->pluck('nama')->toArray();
+                            
+                            if (empty($items)) {
+                                return '-';
+                            }
+                            
+                            return "- " . implode("\n- ", $items);
+                        } catch (\Exception $e) {
+                            return "Error: " . $e->getMessage();
+                        }
+                    })
+                    ->markdown(),
+            ])
+            ->columns(1);
+    }
 
     public static function getPages(): array
     {
