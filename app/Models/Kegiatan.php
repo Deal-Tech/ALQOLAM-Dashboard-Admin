@@ -18,6 +18,7 @@ class Kegiatan extends Model
         'lampiran',
         'konten',
         'created_at',
+        'status',
     ];
 
     public function kategoriKegiatan()

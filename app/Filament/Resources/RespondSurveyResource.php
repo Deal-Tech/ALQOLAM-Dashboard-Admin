@@ -75,7 +75,7 @@ class RespondSurveyResource extends Resource
                         ->label('Konfirmasi Dosen')
                         ->required(),
                     Forms\Components\Toggle::make('is_published')
-                        ->label('Publikasikan')
+                        ->label('Dipublikasi')
                         ->required(),
                 ])
             ])

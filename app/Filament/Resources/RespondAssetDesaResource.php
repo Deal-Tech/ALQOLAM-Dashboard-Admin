@@ -100,7 +100,7 @@ class RespondAssetDesaResource extends Resource
                 
                 Tables\Columns\IconColumn::make('is_completed')
                     ->boolean()
-                    ->label('Selesai'),
+                    ->label('Review Dosen'),
                 
                 Tables\Columns\IconColumn::make('is_published')
                     ->boolean()

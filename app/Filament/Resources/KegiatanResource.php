@@ -82,6 +82,8 @@ class KegiatanResource extends Resource
                     ->label('Gambar Utama')
                     ->searchable()
                     ->sortable(),
+                
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->label('Dibuat Pada'),
