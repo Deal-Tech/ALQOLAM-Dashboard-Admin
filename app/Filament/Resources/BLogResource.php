@@ -44,7 +44,7 @@ class BlogResource extends Resource
         ->schema([
             Forms\Components\Section::make()    
             ->schema([
-                Forms\Components\Textinput::make('judul')
+                Forms\Components\TextInput::make('judul')
                     ->required()
                     ->label('Judul'),
                 Forms\Components\Select::make('id_kategori_kegiatan')
@@ -99,6 +99,7 @@ class BlogResource extends Resource
                     ->dateTime()
                     ->label('Dibuat Pada'),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

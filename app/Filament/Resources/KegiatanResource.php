@@ -57,9 +57,10 @@ class KegiatanResource extends Resource
                     ->image()
                     ->hiddenLabel(),
                 
-                Forms\Components\TextInput::make('konten')
-                    ->Label('Konten')
-                    ->required(),
+                Forms\Components\MarkdownEditor::make('konten')
+                    ->required()
+                    ->columnSpan('full')
+                    ->label('Konten'),
             ]);
     }
 
@@ -89,6 +90,7 @@ class KegiatanResource extends Resource
                     ->dateTime()
                     ->label('Dibuat Pada'),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
