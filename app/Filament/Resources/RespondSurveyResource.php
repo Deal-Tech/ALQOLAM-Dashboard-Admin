@@ -12,6 +12,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\Toggle;
 
 
@@ -72,7 +73,7 @@ class RespondSurveyResource extends Resource
                 Forms\Components\Section::make('Status')
                 ->schema([    
                     Forms\Components\Toggle::make('is_compled')
-                        ->label('Konfirmasi Dosen')
+                        ->label('Review Dosen')
                         ->required(),
                     Forms\Components\Toggle::make('is_published')
                         ->label('Dipublikasi')
@@ -109,7 +110,9 @@ class RespondSurveyResource extends Resource
                     ->label('Desa'),
                 Tables\Columns\TextColumn::make('nama_ketua')->label('Nama Ketua'),
                 
-                Tables\Columns\ToggleColumn::make('is_published')->label('Publikasikan'),
+                Tables\Columns\IconColumn::make('is_published')
+                    ->label('Publikasikan')
+                    ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()
@@ -121,15 +124,27 @@ class RespondSurveyResource extends Resource
                     ->label('Diperbarui Pada'),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('desa_id')
+                    ->relationship('desa', 'nama')
+                    ->label('Desa')
+                    ->searchable()
+                    ->preload(),
+                
+                Tables\Filters\SelectFilter::make('is_completed')
+                    ->options([
+                        '1' => 'Selesai',
+                        '0' => 'Belum Selesai',
+                    ])
+                    ->label('Review Dosen'),
                 
                 Tables\Filters\SelectFilter::make('is_published')
                     ->options([
-                        'true' => 'Sudah',
-                        'false' => 'Belum',
+                        '1' => 'Dipublikasi',
+                        '0' => 'Draft',
                     ])
-                    ->label('Publikasikan'),
-
-            ])
+                    ->label('Status Publikasi'),
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(3)
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),

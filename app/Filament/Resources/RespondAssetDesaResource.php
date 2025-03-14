@@ -61,7 +61,7 @@ class RespondAssetDesaResource extends Resource
                                     ->required(),
                                 
                                 Forms\Components\Toggle::make('is_completed')
-                                    ->label('Survey Selesai')
+                                    ->label('Review Dosen')
                                     ->default(false),
                                 
                                 Forms\Components\Toggle::make('is_published')
@@ -154,7 +154,7 @@ class RespondAssetDesaResource extends Resource
     {
         return $infolist
             ->schema([
-                Infolists\Components\TextEntry::make('mahasiswa.nama_kelompok')
+                Infolists\Components\TextEntry::make('user.nama_kelompok')
                     ->label('Kelompok'),
                 
                 Infolists\Components\TextEntry::make('desa.nama')
@@ -168,7 +168,7 @@ class RespondAssetDesaResource extends Resource
                 
                 Infolists\Components\IconEntry::make('is_completed')
                     ->boolean()
-                    ->label('Status Pengisian'),
+                    ->label('Review Dosen'),
                 
                 Infolists\Components\IconEntry::make('is_published')
                     ->boolean()
@@ -182,14 +182,7 @@ class RespondAssetDesaResource extends Resource
                     ->dateTime()
                     ->label('Diperbarui Pada'),
                 
-                Infolists\Components\Section::make('Detail Aset Desa')
-                    ->schema([
-                        // Additional component to display asset details will go here
-                        // This would typically be a custom component or a repeatable entry
-                        // showing the asset data responses
-                    ])
-                    ->collapsible()
-                    ->columnSpanFull(),
+                
             ])
             ->columns(2);
     }
