@@ -35,101 +35,134 @@ class AsetdesaRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('assetdesa_id')
-                    ->relationship('assetDesa', 'jenis')
+                    ->relationship('assetDesa', 'jenis', function (Builder $query) {
+                        // Only show relevant asset types for this form
+                        return $query;
+                    })
                     ->required()
                     ->label('Jenis Asset')
                     ->reactive()
                     ->afterStateUpdated(function (callable $set, $state) {
+                        $assetDesa = AssetDesa::find($state);
+                        
+                        if (!$assetDesa) {
+                            return;
+                        }
+                        
+                        $isJenisKelamin = $assetDesa->is_jenis_kelamin;
+                        $isSubJenis = $assetDesa->is_data && $assetDesa->is_sub_jenis;
+                        
+                        $set('show_jenis_kelamin', $isJenisKelamin);
+                        $set('show_sub_jenis', $isSubJenis);
+                        
+                        // Reset related fields
                         $set('assetdesa_data_id', null);
                         $set('assetdesa_sub_jenis_id', null);
                         $set('assetdesa_sub_jenis_data_id', null);
-                        
-                        // Check if selected asset is jenis_kelamin or has sub_jenis
-                        $asset = AssetDesa::find($state);
-                        $isJenisKelamin = $asset && $asset->is_jenis_kelamin;
-                        $isSubJenis = $asset && $asset->is_data && $asset->is_sub_jenis;
-                        
-                        // Hide/show appropriate fields based on asset type
-                        $set('show_jenis_kelamin', $isJenisKelamin);
-                        $set('show_sub_jenis', $isSubJenis);
                     }),
                     
-                // Fields for regular data
-                Forms\Components\Select::make('assetdesa_data_id')
-                    ->label('Data Asset')
-                    ->options(function (callable $get) {
-                        $assetId = $get('assetdesa_id');
-                        if (!$assetId) return [];
-                        
-                        $asset = AssetDesa::find($assetId);
-                        if (!$asset || !$asset->is_data || $asset->is_sub_jenis) return [];
-                        
-                        return AssetDesaData::where('assetdesa_id', $assetId)
-                            ->pluck('nama', 'id')
-                            ->toArray();
-                    })
-                    ->required()
-                    ->visible(function (callable $get) {
-                        $assetId = $get('assetdesa_id');
-                        if (!$assetId) return false;
-                        $asset = AssetDesa::find($assetId);
-                        return $asset && $asset->is_data && !$asset->is_sub_jenis;
-                    }),
-                
-                // Fields for sub jenis data
-                Forms\Components\Select::make('assetdesa_sub_jenis_id')
-                    ->label('Sub Jenis')
-                    ->options(function (callable $get) {
-                        $assetId = $get('assetdesa_id');
-                        if (!$assetId) return [];
-                        
-                        return AssetDesaSubJenis::where('assetdesa_id', $assetId)
-                            ->pluck('subjenis', 'id')
-                            ->toArray();
-                    })
-                    ->reactive()
-                    ->afterStateUpdated(fn (callable $set) => $set('assetdesa_sub_jenis_data_id', null))
-                    ->visible(fn (callable $get) => $get('show_sub_jenis')),
-                
-                Forms\Components\Select::make('assetdesa_sub_jenis_data_id')
-                    ->label('Data Sub Jenis')
-                    ->options(function (callable $get) {
-                        $subJenisId = $get('assetdesa_sub_jenis_id');
-                        if (!$subJenisId) return [];
-                        
-                        return AssetDesaSubJenisData::where('subjenis_id', $subJenisId)
-                            ->pluck('nama', 'id')
-                            ->toArray();
-                    })
-                    ->required()
-                    ->visible(fn (callable $get) => $get('assetdesa_sub_jenis_id')),
-                
-                // Regular answer field for non-jenis kelamin data
-                Forms\Components\TextInput::make('nilai')
-                    ->label('Jawaban')
-                    ->required()
-                    ->visible(fn (callable $get) => !$get('show_jenis_kelamin')),
-                
-                // Fields for jenis kelamin data
-                Forms\Components\Section::make('Data Jenis Kelamin')
-                    ->schema([
-                        Forms\Components\TextInput::make('jawaban_laki_laki')
-                            ->label('Jumlah Laki-laki')
-                            ->numeric()
-                            ->required(),
-                        Forms\Components\TextInput::make('jawaban_perempuan')
-                            ->label('Jumlah Perempuan')
-                            ->numeric()
-                            ->required(),
-                    ])
-                    ->columns(2)
-                    ->visible(fn (callable $get) => $get('show_jenis_kelamin')),
-                
-                // Hidden fields to track data type
                 Forms\Components\Hidden::make('show_jenis_kelamin')
                     ->default(false),
+                    
                 Forms\Components\Hidden::make('show_sub_jenis')
                     ->default(false),
+                    
+                // Show this section ALWAYS for both regular and sub jenis data
+                Forms\Components\Section::make('Data Umum')
+                    ->schema([
+                        Forms\Components\Select::make('assetdesa_data_id')
+                            ->options(function (callable $get) {
+                                $assetId = $get('assetdesa_id');
+                                if (!$assetId) return [];
+                                
+                                $asset = AssetDesa::find($assetId);
+                                // Only show data for regular assets (not sub_jenis)
+                                if (!$asset || !$asset->is_data || $asset->is_sub_jenis) return [];
+                                
+                                return AssetDesaData::where('assetdesa_id', $assetId)
+                                    ->pluck('nama', 'id')
+                                    ->toArray();
+                            })
+                            ->label('Data')
+                            ->required(fn (callable $get) => !$get('show_jenis_kelamin') && !$get('show_sub_jenis')),
+                            
+                        // Regular data nilai field - always show for both regular and sub-jenis
+                        Forms\Components\TextInput::make('nilai')
+                            ->label('Jawaban')
+                            ->required(fn (callable $get) => 
+                                !$get('show_jenis_kelamin') && 
+                                (!$get('show_sub_jenis') || ($get('show_sub_jenis') && !$get('assetdesa_sub_jenis_data_id')))
+                            )
+                    ])
+                    ->visible(fn (callable $get) => !$get('show_jenis_kelamin') && !$get('show_sub_jenis')), // Only show for regular data
+                    
+                // Only show sub jenis section for sub jenis data
+                Forms\Components\Section::make('Data Sub Jenis')
+                    ->schema([
+                        Forms\Components\Select::make('assetdesa_sub_jenis_id')
+                            ->options(function (callable $get) {
+                                $assetId = $get('assetdesa_id');
+                                if (!$assetId) return [];
+                                
+                                return AssetDesaSubJenis::where('assetdesa_id', $assetId)
+                                    ->pluck('subjenis', 'id')
+                                    ->toArray();
+                            })
+                            ->label('Sub Jenis')
+                            ->reactive()
+                            ->afterStateUpdated(fn (callable $set) => $set('assetdesa_sub_jenis_data_id', null)),
+                            
+                        Forms\Components\Select::make('assetdesa_sub_jenis_data_id')
+                            ->options(function (callable $get) {
+                                $subJenisId = $get('assetdesa_sub_jenis_id');
+                                if (!$subJenisId) return [];
+                                
+                                return AssetDesaSubJenisData::where('subjenis_id', $subJenisId)
+                                    ->pluck('nama', 'id')
+                                    ->toArray();
+                            })
+                            ->label('Data Sub Jenis')
+                            ->required(fn (callable $get) => $get('show_sub_jenis')),
+                            
+                        // The sub jenis nilai field
+                        Forms\Components\TextInput::make('nilai')
+                            ->label('Jawaban Sub Jenis')
+                            ->required(fn (callable $get) => 
+                                $get('show_sub_jenis') && 
+                                $get('assetdesa_sub_jenis_data_id')
+                            )
+                    ])
+                    ->visible(fn (callable $get) => $get('show_sub_jenis')),
+                    
+                // Only show jenis kelamin section for jenis kelamin data
+                Forms\Components\Section::make('Data Jenis Kelamin')
+                    ->schema([
+                        Forms\Components\Select::make('assetdesa_data_id')
+                            ->options(function (callable $get) {
+                                $assetId = $get('assetdesa_id');
+                                if (!$assetId) return [];
+                                
+                                $asset = AssetDesa::find($assetId);
+                                if (!$asset || !$asset->is_jenis_kelamin) return [];
+                                
+                                return AssetDesaData::where('assetdesa_id', $assetId)
+                                    ->pluck('nama', 'id')
+                                    ->toArray();
+                            })
+                            ->label('Data')
+                            ->required(fn (callable $get) => $get('show_jenis_kelamin')),
+                            
+                        Forms\Components\TextInput::make('jawaban_laki_laki')
+                            ->label('Laki-laki')
+                            ->numeric()
+                            ->required(fn (callable $get) => $get('show_jenis_kelamin')),
+                            
+                        Forms\Components\TextInput::make('jawaban_perempuan')
+                            ->label('Perempuan')
+                            ->numeric() 
+                            ->required(fn (callable $get) => $get('show_jenis_kelamin')),
+                    ])
+                    ->visible(fn (callable $get) => $get('show_jenis_kelamin')),
             ]);
     }
     
@@ -315,6 +348,7 @@ class AsetdesaRelationManager extends RelationManager
             ]);
     }
 
+
     public function table(Table $table): Table
     {
         return $table
@@ -329,7 +363,6 @@ class AsetdesaRelationManager extends RelationManager
                     ->sortable()
                     ->searchable(),
                 
-                
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('assetdesa_id')
@@ -341,6 +374,799 @@ class AsetdesaRelationManager extends RelationManager
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make()
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // Set appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                    ->first();
+                                    
+                                if ($jenisKelaminData) {
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                }
+                            } 
+                            // For sub jenis data
+                            elseif ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                    ->first();
+                                    
+                                if ($subJenisData) {
+                                    $data['nilai'] = $subJenisData->jawaban;
+                                }
+                            } 
+                            // For regular data
+                            elseif ($record->assetdesa_data_id) {
+                                $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                    ->first();
+                                    
+                                if ($regularData) {
+                                    $data['nilai'] = $regularData->jawaban;
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    } else {
+                                        RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    }
+                                } elseif ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                    // Handle sub jenis data
+                                    $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($existingSubJenisData) {
+                                        $existingSubJenisData->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaSubJenisData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                } elseif ($record->assetdesa_data_id) {
+                                    // Handle regular data
+                                    $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingResponse) {
+                                        $existingResponse->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // First, set the appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Log what type of record we're dealing with
+                            Log::info('Editing record', [
+                                'record_id' => $record->id,
+                                'is_jenis_kelamin' => $isJenisKelamin,
+                                'is_sub_jenis' => $isSubJenis,
+                                'assetdesa_data_id' => $record->assetdesa_data_id,
+                                'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id
+                            ]);
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)->first();
+                                    
+                                if ($jenisKelaminData) {
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                    
+                                    Log::info('Found jenis kelamin data', [
+                                        'laki' => $jenisKelaminData->jawaban_laki_laki,
+                                        'perempuan' => $jenisKelaminData->jawaban_perempuan
+                                    ]);
+                                }
+                            }
+                            // Handle both regular and sub-jenis data
+                            else {
+                                // First check for regular data regardless of sub-jenis status
+                                if ($record->assetdesa_data_id) {
+                                    $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($regularData) {
+                                        $data['nilai'] = $regularData->jawaban;
+                                        
+                                        Log::info('Found regular data', [
+                                            'data_id' => $regularData->id,
+                                            'jawaban' => $regularData->jawaban
+                                        ]);
+                                    }
+                                }
+                                
+                                // Then check for sub-jenis data if applicable
+                                if ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                    $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($subJenisData) {
+                                        // For now, use a different field name to avoid conflicts
+                                        $data['nilai_sub_jenis'] = $subJenisData->jawaban;
+                                        
+                                        Log::info('Found sub jenis data', [
+                                            'data_id' => $subJenisData->id,
+                                            'jawaban' => $subJenisData->jawaban
+                                        ]);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                Log::info('Saving record data', [
+                                    'record_id' => $record->id,
+                                    'is_jenis_kelamin' => $isJenisKelamin,
+                                    'is_sub_jenis' => $isSubJenis,
+                                    'data' => $data
+                                ]);
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                        
+                                        Log::info('Updated jenis kelamin data', [
+                                            'id' => $existingJenisKelamin->id
+                                        ]);
+                                    } else {
+                                        $newData = RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                        
+                                        Log::info('Created jenis kelamin data', [
+                                            'id' => $newData->id
+                                        ]);
+                                    }
+                                } else {
+                                    // Always handle regular data first
+                                    if ($record->assetdesa_data_id) {
+                                        $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                            ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                            ->first();
+                                            
+                                        $value = $data['nilai'] ?? '';
+                                            
+                                        if ($existingResponse) {
+                                            $existingResponse->update(['jawaban' => $value]);
+                                            
+                                            Log::info('Updated regular data', [
+                                                'id' => $existingResponse->id,
+                                                'value' => $value
+                                            ]);
+                                        } else {
+                                            $newData = RespondAssetDesaData::create([
+                                                'respond_assetdesa_detail_id' => $record->id,
+                                                'assetdesa_data_id' => $record->assetdesa_data_id,
+                                                'jawaban' => $value
+                                            ]);
+                                            
+                                            Log::info('Created regular data', [
+                                                'id' => $newData->id,
+                                                'value' => $value
+                                            ]);
+                                        }
+                                    }
+                                    
+                                    // Then handle sub jenis data if applicable
+                                    if ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                        $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                            ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                            ->first();
+                                            
+                                        $value = $data['nilai_sub_jenis'] ?? $data['nilai'] ?? '';
+                                            
+                                        if ($existingSubJenisData) {
+                                            $existingSubJenisData->update(['jawaban' => $value]);
+                                            
+                                            Log::info('Updated sub jenis data', [
+                                                'id' => $existingSubJenisData->id,
+                                                'value' => $value
+                                            ]);
+                                        } else {
+                                            $newData = RespondAssetDesaSubJenisData::create([
+                                                'respond_assetdesa_detail_id' => $record->id,
+                                                'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                                'jawaban' => $value
+                                            ]);
+                                            
+                                            Log::info('Created sub jenis data', [
+                                                'id' => $newData->id,
+                                                'value' => $value
+                                            ]);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // First, set the appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first();
+                                    
+                                if ($jenisKelaminData) {
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                }
+                            }
+                            // For sub jenis data with regular data
+                            elseif ($isSubJenis) {
+                                // First load regular data if any
+                                if ($record->assetdesa_data_id) {
+                                    $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($regularData) {
+                                        $data['nilai'] = $regularData->jawaban;
+                                    }
+                                }
+                                
+                                // Then check for sub jenis specific data
+                                if ($record->assetdesa_sub_jenis_data_id) {
+                                    $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($subJenisData) {
+                                        // Only override nilai if we actually found sub jenis data
+                                        $data['nilai'] = $subJenisData->jawaban;
+                                    }
+                                }
+                            }
+                            // For regular data only
+                            else if ($record->assetdesa_data_id) {
+                                $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                    ->first();
+                                    
+                                if ($regularData) {
+                                    $data['nilai'] = $regularData->jawaban;
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                    } else {
+                                        RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                    }
+                                } else {
+                                    // For both regular data and sub jenis
+                                    
+                                    // First handle regular data if applicable
+                                    if ($record->assetdesa_data_id) {
+                                        $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                            ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                            ->first();
+                                            
+                                        if ($existingResponse) {
+                                            $existingResponse->update(['jawaban' => $data['nilai'] ?? '']);
+                                        } else {
+                                            RespondAssetDesaData::create([
+                                                'respond_assetdesa_detail_id' => $record->id,
+                                                'assetdesa_data_id' => $record->assetdesa_data_id,
+                                                'jawaban' => $data['nilai'] ?? ''
+                                            ]);
+                                        }
+                                    }
+                                    
+                                    // Then handle sub jenis data if applicable
+                                    if ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                        $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                            ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                            ->first();
+                                            
+                                        if ($existingSubJenisData) {
+                                            $existingSubJenisData->update(['jawaban' => $data['nilai'] ?? '']);
+                                        } else {
+                                            RespondAssetDesaSubJenisData::create([
+                                                'respond_assetdesa_detail_id' => $record->id,
+                                                'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                                'jawaban' => $data['nilai'] ?? ''
+                                            ]);
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // First, set the appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // Log for debugging what type of asset this is
+                            Log::info('Asset type', [
+                                'record_id' => $record->id,
+                                'asset_id' => $record->assetdesa_id,
+                                'is_jenis_kelamin' => $isJenisKelamin,
+                                'is_sub_jenis' => $isSubJenis,
+                                'assetdesa_data_id' => $record->assetdesa_data_id,
+                                'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id
+                            ]);
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first();
+                                    
+                                if ($jenisKelaminData) {
+                                    Log::info('Found jenis kelamin data', [
+                                        'record_id' => $record->id,
+                                        'jenis_kelamin_id' => $jenisKelaminData->id,
+                                        'laki' => $jenisKelaminData->jawaban_laki_laki,
+                                        'perempuan' => $jenisKelaminData->jawaban_perempuan
+                                    ]);
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                }
+                            }
+                            // For sub jenis data
+                            elseif ($isSubJenis) {
+                                $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first();
+                                    
+                                if ($subJenisData) {
+                                    Log::info('Found sub jenis data', [
+                                        'record_id' => $record->id,
+                                        'sub_jenis_id' => $subJenisData->id,
+                                        'jawaban' => $subJenisData->jawaban
+                                    ]);
+                                    $data['nilai'] = $subJenisData->jawaban;
+                                }
+                            }
+                            // For regular data
+                            else {
+                                $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first();
+                                    
+                                if ($regularData) {
+                                    Log::info('Found regular data', [
+                                        'record_id' => $record->id,
+                                        'regular_data_id' => $regularData->id,
+                                        'jawaban' => $regularData->jawaban
+                                    ]);
+                                    $data['nilai'] = $regularData->jawaban;
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                Log::info('Processing edit after submit', [
+                                    'record_id' => $record->id,
+                                    'is_jenis_kelamin' => $isJenisKelamin,
+                                    'is_sub_jenis' => $isSubJenis,
+                                    'data_to_save' => $data
+                                ]);
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                        Log::info('Updated jenis kelamin data', ['id' => $existingJenisKelamin->id]);
+                                    } else {
+                                        $newData = RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'] ?? 0,
+                                            'jawaban_perempuan' => $data['jawaban_perempuan'] ?? 0
+                                        ]);
+                                        Log::info('Created jenis kelamin data', ['id' => $newData->id]);
+                                    }
+                                } elseif ($isSubJenis) {
+                                    // Handle sub jenis data
+                                    $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($existingSubJenisData) {
+                                        $existingSubJenisData->update(['jawaban' => $data['nilai'] ?? '']);
+                                        Log::info('Updated sub jenis data', ['id' => $existingSubJenisData->id]);
+                                    } else {
+                                        $newData = RespondAssetDesaSubJenisData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                            'jawaban' => $data['nilai'] ?? ''
+                                        ]);
+                                        Log::info('Created sub jenis data', ['id' => $newData->id]);
+                                    }
+                                } else {
+                                    // Handle regular data
+                                    $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingResponse) {
+                                        $existingResponse->update(['jawaban' => $data['nilai'] ?? '']);
+                                        Log::info('Updated regular data', ['id' => $existingResponse->id]);
+                                    } else {
+                                        $newData = RespondAssetDesaData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban' => $data['nilai'] ?? ''
+                                        ]);
+                                        Log::info('Created regular data', ['id' => $newData->id]);
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // Set appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                    ->first();
+                                    
+                                if ($jenisKelaminData) {
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                }
+                            } 
+                            // For sub jenis data
+                            elseif ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                // Important: We need to query by sub_jenis_data_id here
+                                $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                    ->first();
+                                    
+                                if ($subJenisData) {
+                                    $data['nilai'] = $subJenisData->jawaban;
+                                }
+                            } 
+                            // For regular data
+                            elseif ($record->assetdesa_data_id) {
+                                $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                    ->first();
+                                    
+                                if ($regularData) {
+                                    $data['nilai'] = $regularData->jawaban;
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    } else {
+                                        RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    }
+                                } elseif ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                    // Handle sub jenis data
+                                    $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($existingSubJenisData) {
+                                        $existingSubJenisData->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaSubJenisData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                } elseif ($record->assetdesa_data_id) {
+                                    // Handle regular data
+                                    $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingResponse) {
+                                        $existingResponse->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
+                    ->mutateRecordDataUsing(function (array $data, $record) {
+                        // Set appropriate flags based on asset type
+                        if ($record->assetDesa) {
+                            $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                            $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                            
+                            // Set flags for showing/hiding form sections
+                            $data['show_jenis_kelamin'] = $isJenisKelamin;
+                            $data['show_sub_jenis'] = $isSubJenis;
+                            
+                            // For jenis kelamin data
+                            if ($isJenisKelamin) {
+                                $jenisKelaminData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first(); // Remove the data_id filter to find any record
+                                    
+                                if ($jenisKelaminData) {
+                                    $data['jawaban_laki_laki'] = $jenisKelaminData->jawaban_laki_laki;
+                                    $data['jawaban_perempuan'] = $jenisKelaminData->jawaban_perempuan;
+                                }
+                            } 
+                            // For sub jenis data
+                            elseif ($isSubJenis) {
+                                $subJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first(); // Remove the data_id filter to find any record
+                                    
+                                if ($subJenisData) {
+                                    $data['nilai'] = $subJenisData->jawaban;
+                                }
+                            } 
+                            // For regular data
+                            else {
+                                $regularData = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                    ->first(); // Remove the data_id filter to find any record
+                                    
+                                if ($regularData) {
+                                    $data['nilai'] = $regularData->jawaban;
+                                }
+                            }
+                        }
+                        
+                        return $data;
+                    })
+                    ->after(function ($record, array $data) {
+                        try {
+                            // Update related data based on asset type
+                            if ($record->assetDesa) {
+                                $isJenisKelamin = $record->assetDesa->is_jenis_kelamin;
+                                $isSubJenis = $record->assetDesa->is_data && $record->assetDesa->is_sub_jenis;
+                                
+                                if ($isJenisKelamin) {
+                                    // Handle jenis kelamin data
+                                    $existingJenisKelamin = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingJenisKelamin) {
+                                        $existingJenisKelamin->update([
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    } else {
+                                        RespondAssetDesaJenisKelamin::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                                            'jawaban_perempuan' => $data['jawaban_perempuan']
+                                        ]);
+                                    }
+                                } elseif ($isSubJenis && $record->assetdesa_sub_jenis_data_id) {
+                                    // Handle sub jenis data
+                                    $existingSubJenisData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_sub_jenis_data_id', $record->assetdesa_sub_jenis_data_id)
+                                        ->first();
+                                        
+                                    if ($existingSubJenisData) {
+                                        $existingSubJenisData->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaSubJenisData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_sub_jenis_data_id' => $record->assetdesa_sub_jenis_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                } elseif ($record->assetdesa_data_id) {
+                                    // Handle regular data
+                                    $existingResponse = RespondAssetDesaData::where('respond_assetdesa_detail_id', $record->id)
+                                        ->where('assetdesa_data_id', $record->assetdesa_data_id)
+                                        ->first();
+                                        
+                                    if ($existingResponse) {
+                                        $existingResponse->update(['jawaban' => $data['nilai']]);
+                                    } else {
+                                        RespondAssetDesaData::create([
+                                            'respond_assetdesa_detail_id' => $record->id,
+                                            'assetdesa_data_id' => $record->assetdesa_data_id,
+                                            'jawaban' => $data['nilai']
+                                        ]);
+                                    }
+                                }
+                            }
+                        } catch (\Exception $e) {
+                            // Log the error for debugging
+                            Log::error('Error updating asset desa data', [
+                                'record_id' => $record->id,
+                                'error' => $e->getMessage(),
+                                'trace' => $e->getTraceAsString()
+                            ]);
+                        }
+                    })
                     ->mutateRecordDataUsing(function (array $data, $record) {
                         // Load related values based on asset type
                         if ($record->assetDesa) {
