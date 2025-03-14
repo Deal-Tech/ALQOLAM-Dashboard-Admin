@@ -65,6 +65,21 @@ class KegiatanResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->query(function () {
+                // Get currently logged-in dosen's ID
+                $dosenId = auth('dosen')->id();
+                
+                // Get user_ids (kelompok) associated with this dosen
+                $kelompokIds = \App\Models\RespondSurvey::where('dosenpendamping_id', $dosenId)
+                    ->pluck('user_id')
+                    ->unique()
+                    ->toArray();
+                
+                // Filter kegiatan to only those created by associated kelompok
+                return Kegiatan::query()
+                    ->whereIn('user_id', $kelompokIds);
+                    
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('judul')
                     ->searchable()
@@ -87,6 +102,7 @@ class KegiatanResource extends Resource
                     ->dateTime()
                     ->label('Dibuat Pada'),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

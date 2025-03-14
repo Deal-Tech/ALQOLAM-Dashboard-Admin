@@ -45,6 +45,7 @@ class InformationResource extends Resource
                 Tables\Columns\TextColumn::make('link_berita')->label('Link Berita'),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->label('Dibuat Pada'),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])
