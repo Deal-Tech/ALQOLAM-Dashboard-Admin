@@ -27,4 +27,9 @@ class Mahasiswa extends Model
     {
         $this->attributes['password'] = Hash::make($value);
     }
+
+    public function respondSurveys()
+    {
+        return $this->hasMany(RespondSurvey::class, 'user_id');
+    }
 }
