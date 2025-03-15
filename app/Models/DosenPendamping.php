@@ -7,6 +7,7 @@ use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
 class DosenPendamping extends Authenticatable implements FilamentUser, HasName
 {
@@ -44,5 +45,10 @@ class DosenPendamping extends Authenticatable implements FilamentUser, HasName
     public function getName(): string
     {
         return $this->getFilamentName();
+    }
+
+    public function setPasswordAttribute($value)
+    {
+        $this->attributes['password'] = Hash::make($value);
     }
 }
