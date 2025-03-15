@@ -20,7 +20,7 @@ class SubVariabelResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationLabel = 'Sub Variabel';
+    protected static ?string $navigationLabel = 'Indikator';
 
     protected static ?int $navigationSort = 1;
 
@@ -28,12 +28,12 @@ class SubVariabelResource extends Resource
 
     public static function getLabel(): string
     {
-        return 'Sub Variabel';
+        return 'Indikator';
     }
 
     public static function getPluralLabel(): string
     {
-        return 'Sub Variabel';
+        return 'Indikator';
     }
 
     public static function form(Form $form): Form
@@ -45,10 +45,10 @@ class SubVariabelResource extends Resource
                 
                 Forms\Components\TextInput::make('nama')
                     ->required()
-                    ->placeholder('Nama Sub Variabel'),
+                    ->placeholder('Nama Indikator'),
 
                 Forms\Components\Textarea::make('deskripsi')
-                    ->placeholder('Deskripsi Sub Variabel'),
+                    ->placeholder('Deskripsi Indikator'),
             ]);
     }
 
@@ -58,7 +58,7 @@ class SubVariabelResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
                     ->searchable()
-                    ->label('Nama Sub Variabel')
+                    ->label('Nama Indikator')
                     ->formatStateUsing(function ($state) {
                         $words = explode(' ', $state);
                         return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
