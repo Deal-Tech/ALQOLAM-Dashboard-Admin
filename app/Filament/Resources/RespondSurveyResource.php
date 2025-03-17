@@ -90,10 +90,7 @@ class RespondSurveyResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->query(
-                RespondSurvey::query()->where('is_compled', true)
-               
-            )
+            
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
@@ -109,6 +106,10 @@ class RespondSurveyResource extends Resource
                     ->searchable()
                     ->label('Desa'),
                 Tables\Columns\TextColumn::make('nama_ketua')->label('Nama Ketua'),
+
+                Tables\Columns\IconColumn::make('is_compled')
+                    ->label('Konfirmasi Dosen')
+                    ->boolean(),
                 
                 Tables\Columns\IconColumn::make('is_published')
                     ->label('Publikasikan')
@@ -139,11 +140,12 @@ class RespondSurveyResource extends Resource
                 
                 Tables\Filters\SelectFilter::make('is_published')
                     ->options([
-                        '1' => 'Dipublikasi',
+                        '1' => 'Publikasi',
                         '0' => 'Draft',
                     ])
                     ->label('Status Publikasi'),
             ], layout: FiltersLayout::AboveContent)
+            ->defaultSort('created_at', 'desc')
             ->filtersFormColumns(3)
             ->actions([
                 Tables\Actions\ViewAction::make(),
