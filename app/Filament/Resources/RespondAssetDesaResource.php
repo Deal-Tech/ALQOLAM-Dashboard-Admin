@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use App\Filament\Imports\RespondAsetDesaDetailImporter;
 
 class RespondAssetDesaResource extends Resource
 {
@@ -80,6 +81,11 @@ class RespondAssetDesaResource extends Resource
     {
         return $table
             ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('user.nama_kelompok')
                     ->searchable()
                     ->sortable()
@@ -119,6 +125,7 @@ class RespondAssetDesaResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->label('Diperbarui Pada'),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('desa_id')
                     ->relationship('desa', 'nama')
@@ -141,6 +148,14 @@ class RespondAssetDesaResource extends Resource
                     ->label('Status Publikasi'),
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(3)
+            ->headerActions([
+                Tables\Actions\ImportAction::make()
+                    ->label('Import Details')
+                    ->icon('heroicon-s-document-plus')
+                    ->color('primary')
+                    ->importer(RespondAsetDesaDetailImporter::class)
+                    ->modalHeading('Import Respond Asset Desa Details'),
+            ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),

@@ -21,6 +21,9 @@ use Illuminate\Support\HtmlString;
 use Filament\Infolists\Infolist;
 use Filament\Infolists\Components;
 use Filament\Tables\Enums\FiltersLayout;
+use App\Filament\Imports\RegularAssetDataImporter;
+use App\Filament\Imports\JenisKelaminAssetDataImporter;
+use App\Filament\Imports\SubJenisAssetDataImporter;
 
 class AsetdesaRelationManager extends RelationManager
 {
@@ -1316,7 +1319,30 @@ class AsetdesaRelationManager extends RelationManager
                             ]);
                         }
                     }),
+                    Tables\Actions\ImportAction::make()
+                        ->label('Import Data Reguler')
+                        ->icon('heroicon-s-document-plus')
+                        ->color('primary')
+                        ->importer(RegularAssetDataImporter::class)
+                        ->modalHeading('Import Data Reguler'),
+                        
+                    Tables\Actions\ImportAction::make('importJenisKelamin')
+                        ->label('Import Data Jenis Kelamin')
+                        ->icon('heroicon-s-users')
+                        ->color('success')
+                        ->importer(JenisKelaminAssetDataImporter::class)
+                        ->modalHeading('Import Data Jenis Kelamin')
+                        ->modalDescription('Upload CSV/Excel dengan data jenis kelamin.'),
+                        
+                    Tables\Actions\ImportAction::make('importSubJenis')
+                        ->label('Import Data Sub Jenis')
+                        ->icon('heroicon-s-table-cells')
+                        ->color('warning')
+                        ->importer(SubJenisAssetDataImporter::class)
+                        ->modalHeading('Import Data Sub Jenis')
+                        ->modalDescription('Upload CSV/Excel dengan data sub jenis.'),
             ]);
+            
     }
     
     protected function getTableQuery(): Builder
