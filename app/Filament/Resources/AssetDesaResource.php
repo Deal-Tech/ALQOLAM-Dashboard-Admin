@@ -20,15 +20,16 @@ use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\AssetDesaResource\Pages\CreateAssetDesa;
 use App\Filament\Resources\AssetDesaResource\Pages\EditAssetDesa;
 use Filament\Support\Enums\FontWeight;
+use App\Filament\Exports\AssetDesaExporter;
 
 class AssetDesaResource extends Resource
 {
     protected static ?string $model = AssetDesa::class;
 
     protected static ?string $navigationIcon = 'heroicon-m-ellipsis-horizontal';
-    protected static ?string $navigationGroup = 'Asset Desa';
+    protected static ?string $navigationGroup = 'Aset Desa';
     protected static ?int $navigationSort = 1;
-    protected static ?string $navigationLabel = 'Data Asset';
+    protected static ?string $navigationLabel = 'Data Aset';
     protected static ?string $slug = 'asset-desa';
 
     public static function form(Form $form): Form 
@@ -196,6 +197,16 @@ class AssetDesaResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Tambah Asset')
+                    ->icon('heroicon-o-plus')
+                    ->color('primary'),
+                Tables\Actions\ExportAction::make()
+                    ->label('Ekspor Data')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->exporter(AssetDesaExporter::class)
             ]);
     }
 

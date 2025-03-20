@@ -28,6 +28,8 @@ class RespondAssetDesaResource extends Resource
 
     protected static ?string $navigationLabel = 'Hasil Aset Desa';
 
+    protected static ?string $slug = 'respond-asset-desa';
+
     public static function getLabel(): string
     {
         return 'Hasil Aset Desa';   
