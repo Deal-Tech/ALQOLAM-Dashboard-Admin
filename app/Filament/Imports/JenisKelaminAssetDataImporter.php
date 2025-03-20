@@ -9,25 +9,20 @@ use App\Models\RespondAssetDesaJenisKelamin;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Facades\Log;
 
 class JenisKelaminAssetDataImporter extends Importer
 {
-    protected static ?string $model = RespondAssetDesaDetail::class;
+    protected static ?string $model = RespondAssetDesaJenisKelamin::class;
     
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('jenis_asset')
-                ->label('Jenis Asset')
+            ImportColumn::make('assetdesa_data_id')
+                ->label('assetdesa_data_id')
                 ->requiredMapping()
-                ->example('Penduduk Berdasarkan Jenis Kelamin')
-                ->rules(['required', 'string']),
-                
-            ImportColumn::make('nama_data')
-                ->label('Nama Data')
-                ->requiredMapping()
-                ->example('Dewasa')
-                ->rules(['required', 'string']),
+                ->example('1')
+                ->rules(['required', 'integer', 'exists:assetdesa_data,id']),
                 
             ImportColumn::make('jawaban_laki_laki')
                 ->label('Laki-laki')
@@ -43,75 +38,135 @@ class JenisKelaminAssetDataImporter extends Importer
                 ->numeric()
                 ->rules(['required', 'numeric']),
 
-            ImportColumn::make('respondsurvey_id')
-                ->label('Respond Survey ID')
-                ->required()
-                ->hidden()
-                ->rules(['integer', 'exists:respond_assetdesa,id']),
+            ImportColumn::make('respond_assetdesa_detail_id')
+                ->label('Respond Asset Desa Detail ID')
+                ->requiredMapping() 
+                ->rules(['integer', 'exists:respond_assetdesa_detail,id']),
+        ];
+    }
+    
+    public static function getCsvContents(): string
+    {
+        $assetDataList = AssetDesaData::whereHas('assetDesa', function($query) {
+            $query->where('is_jenis_kelamin', true);
+        })->take(3)->get();
+
+        $headers = ['assetdesa_data_id', 'jawaban_laki_laki', 'jawaban_perempuan', 'respond_assetdesa_detail_id'];
+        $rows = [];
+        
+        $sampleDetailId = RespondAssetDesaDetail::first()?->id ?? '1';
+        
+        if ($assetDataList->isNotEmpty()) {
+            foreach ($assetDataList as $assetData) {
+                $rows[] = [
+                    $assetData->id,
+                    mt_rand(1000, 5000),  
+                    mt_rand(1000, 5000),  
+                    $sampleDetailId
+                ];
+            }
+        }
+        
+        if (empty($rows)) {
+            $rows = [
+                ['1', '2500', '2300', $sampleDetailId],
+                ['2', '3500', '3200', $sampleDetailId],
+                ['3', '8000', '7500', $sampleDetailId]
+            ];
+        }
+        
+        $csv = implode(',', $headers) . "\n";
+        foreach ($rows as $row) {
+            $csv .= implode(',', $row) . "\n";
+        }
+        
+        return $csv;
+    }
+    
+    public function getValidationMessages(): array
+    {
+        return [
+            'assetdesa_data_id.required' => 'Asset Desa Data ID harus diisi',
+            'assetdesa_data_id.integer' => 'Asset Desa Data ID harus berupa angka',
+            'assetdesa_data_id.exists' => 'Asset Desa Data ID tidak ditemukan',
+            'jawaban_laki_laki.required' => 'Jumlah Laki-laki harus diisi',
+            'jawaban_laki_laki.numeric' => 'Jumlah Laki-laki harus berupa angka',
+            'jawaban_perempuan.required' => 'Jumlah Perempuan harus diisi',
+            'jawaban_perempuan.numeric' => 'Jumlah Perempuan harus berupa angka',
+            'respond_assetdesa_detail_id.required' => 'Respond Asset Desa Detail ID harus diisi',
+            'respond_assetdesa_detail_id.exists' => 'Respond Asset Desa Detail ID tidak ditemukan',
         ];
     }
     
     public function import(Import $import, array $data): void
     {
-        try {
-            // Find the Asset Desa by jenis
-            $assetDesa = AssetDesa::where('jenis', $data['jenis_asset'])
-                ->where('is_jenis_kelamin', true)
-                ->first();
+        if (!empty($data['assetdesa_data_id']) && !empty($data['jawaban_laki_laki']) && 
+            !empty($data['jawaban_perempuan']) && !empty($data['respond_assetdesa_detail_id'])) {
+            try {
             
-            if (!$assetDesa) {
-                \Log::warning('Jenis kelamin asset not found: ' . $data['jenis_asset']);
-                $import->skipRow();
-                return;
-            }
-            
-            // Find the asset data by name
-            $assetData = AssetDesaData::where('assetdesa_id', $assetDesa->id)
-                ->where('nama', $data['nama_data'])
-                ->first();
+                $assetData = AssetDesaData::find($data['assetdesa_data_id']);
                 
-            if (!$assetData) {
-                \Log::warning('Asset data not found: ' . $data['nama_data']);
-                $import->skipRow();
-                return;
-            }
-            
-            // Find or create the respond detail
-            $respondDetail = RespondAssetDesaDetail::firstOrCreate(
-                [
-                    'respond_assetdesa_id' => $data['respondsurvey_id'],
-                    'assetdesa_id' => $assetDesa->id,
-                    'assetdesa_data_id' => $assetData->id,
-                ]
-            );
-            
-            // Find or create the jenis kelamin data
-            $existingData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $respondDetail->id)
-                ->where('assetdesa_data_id', $assetData->id)
-                ->first();
+                if (!$assetData) {
+                    Log::warning('Asset data tidak ditemukan', ['assetdesa_data_id' => $data['assetdesa_data_id']]);
+                    $import->skipRow();
+                    return;
+                }
                 
-            if ($existingData) {
-                $existingData->update([
-                    'jawaban_laki_laki' => $data['jawaban_laki_laki'],
-                    'jawaban_perempuan' => $data['jawaban_perempuan']
+            
+                $assetDesa = $assetData->assetDesa;
+                if (!$assetDesa || !$assetDesa->is_jenis_kelamin) {
+                    Log::warning('Asset bukan tipe jenis kelamin', ['assetdesa_id' => $assetDesa->id ?? 'unknown']);
+                    $import->skipRow();
+                    return;
+                }
+                
+         
+                $respondDetail = RespondAssetDesaDetail::find($data['respond_assetdesa_detail_id']);
+                
+                if (!$respondDetail) {
+                    Log::warning('Respond asset desa detail tidak ditemukan', [
+                        'respond_assetdesa_detail_id' => $data['respond_assetdesa_detail_id']
+                    ]);
+                    $import->skipRow();
+                    return;
+                }
+                
+           
+                $existingData = RespondAssetDesaJenisKelamin::where('respond_assetdesa_detail_id', $data['respond_assetdesa_detail_id'])
+                    ->where('assetdesa_data_id', $data['assetdesa_data_id'])
+                    ->first();
+                    
+                if ($existingData) {
+                    $existingData->update([
+                        'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                        'jawaban_perempuan' => $data['jawaban_perempuan']
+                    ]);
+                    Log::info('Updated jenis kelamin data', ['id' => $existingData->id]);
+                } else {
+                    $newData = RespondAssetDesaJenisKelamin::create([
+                        'respond_assetdesa_detail_id' => $data['respond_assetdesa_detail_id'],
+                        'assetdesa_data_id' => $data['assetdesa_data_id'],
+                        'jawaban_laki_laki' => $data['jawaban_laki_laki'],
+                        'jawaban_perempuan' => $data['jawaban_perempuan']
+                    ]);
+                    Log::info('Created jenis kelamin data', ['id' => $newData->id]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Import error: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'data' => $data
                 ]);
-                \Log::info('Updated jenis kelamin data', ['id' => $existingData->id]);
-            } else {
-                $newData = RespondAssetDesaJenisKelamin::create([
-                    'respond_assetdesa_detail_id' => $respondDetail->id,
-                    'assetdesa_data_id' => $assetData->id,
-                    'jawaban_laki_laki' => $data['jawaban_laki_laki'],
-                    'jawaban_perempuan' => $data['jawaban_perempuan']
-                ]);
-                \Log::info('Created jenis kelamin data', ['id' => $newData->id]);
+                throw $e;
             }
-        } catch (\Exception $e) {
-            \Log::error('Import error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'data' => $data
-            ]);
-            throw $e;
+        } else {
+            $import->skipRow();
+            Log::info('Melewati baris yang tidak valid - data tidak lengkap');
         }
+    }
+    
+    public function resolveRecord(): ?RespondAssetDesaJenisKelamin
+    {
+        return new RespondAssetDesaJenisKelamin();
     }
     
     public static function getCompletedNotificationBody(Import $import): string

@@ -1331,16 +1331,14 @@ class AsetdesaRelationManager extends RelationManager
                         ->icon('heroicon-s-users')
                         ->color('success')
                         ->importer(JenisKelaminAssetDataImporter::class)
-                        ->modalHeading('Import Data Jenis Kelamin')
-                        ->modalDescription('Upload CSV/Excel dengan data jenis kelamin.'),
+                        ->modalHeading('Import Data Jenis Kelamin'),
                         
                     Tables\Actions\ImportAction::make('importSubJenis')
                         ->label('Import Data Sub Jenis')
                         ->icon('heroicon-s-table-cells')
                         ->color('warning')
                         ->importer(SubJenisAssetDataImporter::class)
-                        ->modalHeading('Import Data Sub Jenis')
-                        ->modalDescription('Upload CSV/Excel dengan data sub jenis.'),
+                        ->modalHeading('Import Data Sub Jenis'),
             ]);
             
     }
