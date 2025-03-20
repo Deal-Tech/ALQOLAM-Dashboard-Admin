@@ -52,6 +52,9 @@ class RespondSurveyResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('nama_ketua')
                     ->required(),
+                forms\Components\Select::make('dosenpendamping_id')
+                    ->relationship('dosenpendamping', 'nama_lengkap')
+                    ->required(),
                 Forms\Components\Select::make('kabupaten_id')
                     ->relationship('kabupaten', 'nama')
                     ->required(),
@@ -96,8 +99,8 @@ class RespondSurveyResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
                     ->sortable()
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->searchable(),
+                    
                 Tables\Columns\TextColumn::make('mahasiswa.nama_kelompok')->label('Kelompok'),
                 Tables\Columns\TextColumn::make('dosenpendamping.nama_lengkap')
                     ->label('Dosen Pendamping'),
@@ -149,6 +152,9 @@ class RespondSurveyResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filtersFormColumns(3)
             ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Tambah Data')
+                    ->icon('heroicon-o-plus'),
                 Tables\Actions\ImportAction::make()
                     ->importer(RespondSurveyImporter::class)
                     ->label('Import Data')
@@ -157,6 +163,7 @@ class RespondSurveyResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

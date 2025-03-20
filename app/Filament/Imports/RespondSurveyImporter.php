@@ -2,152 +2,160 @@
 
 namespace App\Filament\Imports;
 
-use App\Models\RespondSurvey;
-use App\Models\RespondSurveyDetail;
-use App\Models\User;
-use App\Models\Desa;
-use App\Models\DosenPendamping;
+use App\Models\ResponDetail;
 use App\Models\Survey;
+use App\Models\Mahasiswa;
+use App\Models\RespondSurvey;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RespondSurveyImporter extends Importer
 {
-    protected static ?string $model = RespondSurvey::class;
+    protected static ?string $model = ResponDetail::class;
     
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('user_id')
-                ->label('User ID')
-                ->requiredMapping()
-                ->example('1')
-                ->rules(['integer', 'exists:mahasiswa,id']),
-                
-            ImportColumn::make('kabupaten_id')
-                ->label('Kab ID')
-                ->requiredMapping()
-                ->example('1')
-                ->rules(['integer', 'exists:kabupaten,id']),
-
-            ImportColumn::make('kecamatan_id')
-                ->label('Kec ID')
-                ->requiredMapping()
-                ->example('1')
-                ->rules(['integer', 'exists:kecamatan,id']),
-
-            ImportColumn::make('desa_id')
-                ->label('Desa ID')
-                ->requiredMapping()
-                ->example('1')
-                ->rules(['integer', 'exists:desa,id']),
-                
-            ImportColumn::make('dosenpendamping_id')
-                ->label('Dosen Pendamping ID')
-                ->requiredMapping()
-                ->example('1')
-                ->rules(['integer', 'exists:dosenpendamping,id']),
-                
-            ImportColumn::make('nama_ketua')
-                ->label('Nama Ketua')
-                ->requiredMapping()
-                ->example('Budi Santoso')
-                ->rules(['string', 'max:255']),
-                
-            ImportColumn::make('review_dosen')
-                ->label('Review Dosen')
-                ->example('1')
-                ->fillRecordUsing(function (array $data, array $row) {
-                    $review = strtolower($data['review_dosen'] ?? '');
-                    $data['is_compled'] = in_array($review, ['ya', 'y', 'true', '1', 'yes']);
-                    
-                    return $data;
-                }),
-                
-            ImportColumn::make('publikasi')
-                ->label('Publikasi')
-                ->example('0')
-                ->fillRecordUsing(function (array $data, array $row) {
-                    $publikasi = strtolower($data['publikasi'] ?? '');
-                    $data['is_published'] = in_array($publikasi, ['ya', 'y', 'true', '1', 'yes']);
-                    
-                    return $data;
-                }),
-            
-            // Untuk detail jawaban
             ImportColumn::make('survey_id')
-                ->label('Survey ID (letakkan di sel A6)')
-                ->requiredMapping(false)
+                ->label('Survey ID')
+                ->requiredMapping()
                 ->example('1')
-                ->rules(['integer', 'exists:survey,id'])
-                ->helperText('Letakkan ID pertanyaan survey di sel A6 pada template Excel'),
-
+                ->rules(['integer', 'exists:survey,id']),
+                
             ImportColumn::make('jawaban')
-                ->label('Jawaban (letakkan di sel B6)')
-                ->requiredMapping(false)
+                ->label('Jawaban')
+                ->requiredMapping()
                 ->example('Jawaban survey')
-                ->helperText('Letakkan jawaban survey di sel B6 pada template Excel'),
+                ->rules(['required', 'string']),
+
+            ImportColumn::make('respondsurvey_id')
+                ->label('Respond Survey ID')
+                ->requiredMapping()
+                ->example('1')
+                ->rules(['integer', 'exists:respondsurvey,id']),
         ];
     }
     
+    protected function validateRequiredSurveys(int $respondSurveyId): void
+    {
+        $requiredSurveys = Survey::where('is_required', true)->pluck('id')->toArray();
+        
+        $existingAnswers = ResponDetail::where('respondsurvey_id', $respondSurveyId)
+            ->pluck('survey_id')
+            ->toArray();
+        
+        $allAnsweredSurveys = array_unique(array_merge($existingAnswers, $this->importedSurveyIds[$respondSurveyId] ?? []));
+        
+        
+        $missingSurveys = array_diff($requiredSurveys, $allAnsweredSurveys);
+        
+        if (count($missingSurveys) > 0) {
+            $missingIds = implode(', ', $missingSurveys);
+            $missingSurveyTitles = Survey::whereIn('id', $missingSurveys)->pluck('title')->implode(', ');
+            
+            throw new ValidationException(
+                validator([], [])
+                    ->errors()
+                    ->add('import', "Ada survey belum dijawab: {$missingSurveyTitles} (ID: {$missingIds})")
+            );
+        }
+    }
+    
+
+    protected array $importedSurveyIds = [];
     
     public function import(Import $import, array $data): void
     {
-       
-        $surveyId = $data['survey_id'] ?? null;
-        $jawaban = $data['jawaban'] ?? null;
-        
+        if (!empty($data['survey_id']) && !empty($data['jawaban']) && !empty($data['respondsurvey_id'])) {
+            try {
 
-        unset($data['survey_id']);
-        unset($data['jawaban']);
-        
+                $survey = Survey::find($data['survey_id']);
+                
+                if (!$survey) {
+                    \Log::warning('Survey tidak ditemukan', ['survey_id' => $data['survey_id']]);
+                    $import->skipRow();
+                    return;
+                }
 
-        $record = $this->resolveRecord();
-        $record->fill($data);
-        $record->save();
-        
-
-        if (!empty($surveyId) && !empty($jawaban)) {
-            $survey = Survey::find($surveyId);
-            
-            if ($survey) {
-                RespondSurveyDetail::create([
-                    'respondsurvey_id' => $record->id,
-                    'survey_id' => $survey->id,
-                    'jawaban' => $jawaban,
+                $respondSurvey = RespondSurvey::find($data['respondsurvey_id']);
+                
+                if (!$respondSurvey) {
+                    \Log::warning('RespondSurvey tidak ditemukan', ['respondsurvey_id' => $data['respondsurvey_id']]);
+                    $import->skipRow();
+                    return;
+                }
+                
+                $existingAnswer = ResponDetail::where('respondsurvey_id', $data['respondsurvey_id'])
+                    ->where('survey_id', $data['survey_id'])
+                    ->first();
+                
+                if ($existingAnswer) {
+                    \Log::warning('Jawaban survey sudah ada. Melakukan update.', [
+                        'id' => $existingAnswer->id,
+                        'survey_id' => $data['survey_id']
+                    ]);
+                    
+                    $existingAnswer->jawaban = $data['jawaban'];
+                    $existingAnswer->save();
+                } else {
+                   
+                    $detailRecord = ResponDetail::create([
+                        'respondsurvey_id' => $data['respondsurvey_id'],
+                        'survey_id' => $data['survey_id'],
+                        'jawaban' => $data['jawaban']
+                    ]);
+                    
+                    
+                    if (!isset($this->importedSurveyIds[$data['respondsurvey_id']])) {
+                        $this->importedSurveyIds[$data['respondsurvey_id']] = [];
+                    }
+                    $this->importedSurveyIds[$data['respondsurvey_id']][] = $data['survey_id'];
+                    
+                    \Log::info('Berhasil membuat record respondetail', [
+                        'id' => $detailRecord->id,
+                        'survey_id' => $data['survey_id'],
+                        'jawaban' => $data['jawaban']
+                    ]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Gagal membuat record respondetail: ' . $e->getMessage(), [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
+                throw $e; 
             }
+        } else {
+            $import->skipRow();
+            \Log::info('Melewati baris yang tidak valid - data tidak lengkap');
         }
     }
     
-    public function afterCreate(Import $import, RespondSurvey $record, array $data): void
+    public function afterImport(Import $import): void
     {
-
-        $surveyId = $data['survey_id'] ?? null;
-        $jawaban = $data['jawaban'] ?? null;
         
-        if (!empty($surveyId) && !empty($jawaban)) {
-            $survey = Survey::find($surveyId);
-            
-            if ($survey) {
-                RespondSurveyDetail::create([
-                    'respondsurvey_id' => $record->id,
-                    'survey_id' => $survey->id,
-                    'jawaban' => $jawaban,
-                ]);
+        try {
+            foreach ($this->importedSurveyIds as $respondSurveyId => $surveyIds) {
+                $this->validateRequiredSurveys($respondSurveyId);
             }
+        } catch (ValidationException $e) {
+            \Log::error('Validasi gagal setelah import: ' . $e->getMessage());
+            throw $e;
         }
+        
+        \Log::info('Import selesai dengan validasi semua pertanyaan wajib telah dijawab');
     }
     
-    public function resolveRecord(): ?RespondSurvey
+    public function resolveRecord(): ?ResponDetail
     {
-        return new RespondSurvey();
+        return new ResponDetail();
     }
     
     public static function getCompletedNotificationBody(Import $import): string
     {
         $count = $import->successful_rows;
-        return "Berhasil mengimpor {$count} hasil survei dengan detailnya.";
+        return "Berhasil mengimpor {$count} jawaban survey.";
     }
 }
