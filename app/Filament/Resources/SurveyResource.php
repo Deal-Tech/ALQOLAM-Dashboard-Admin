@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Enums\FiltersLayout;
+use App\Filament\Exports\SurveyExporter;
 
 class SurveyResource extends Resource
 {
@@ -155,6 +156,16 @@ class SurveyResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Tambah Survey')
+                    ->icon('heroicon-o-plus')
+                    ->color('primary'),
+                Tables\Actions\ExportAction::make()
+                    ->label('Ekspor Data')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->exporter(SurveyExporter::class)
             ]);
     }
 
