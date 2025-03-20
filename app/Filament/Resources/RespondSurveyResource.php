@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RespondSurveyResource\Pages;
 use App\Filament\Resources\RespondSurveyResource\RelationManagers;
+use App\Filament\Imports\RespondSurveyImporter;
 use App\Models\RespondSurvey;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -147,6 +148,12 @@ class RespondSurveyResource extends Resource
             ], layout: FiltersLayout::AboveContent)
             ->defaultSort('created_at', 'desc')
             ->filtersFormColumns(3)
+            ->headerActions([
+                Tables\Actions\ImportAction::make()
+                    ->importer(RespondSurveyImporter::class)
+                    ->label('Import Data')
+                    ->icon('heroicon-o-document-plus'),
+            ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
