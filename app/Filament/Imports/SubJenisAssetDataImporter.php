@@ -10,31 +10,20 @@ use App\Models\RespondAssetDesaSubJenisData;
 use Filament\Actions\Imports\Importer;
 use Filament\Actions\Imports\ImportColumn;
 use Filament\Actions\Imports\Models\Import;
+use Illuminate\Support\Facades\Log;
 
 class SubJenisAssetDataImporter extends Importer
 {
-    protected static ?string $model = RespondAssetDesaDetail::class;
+    protected static ?string $model = RespondAssetDesaSubJenisData::class;
     
     public static function getColumns(): array
     {
         return [
-            ImportColumn::make('jenis_asset')
-                ->label('Jenis Asset')
+            ImportColumn::make('assetdesa_sub_jenis_data_id')
+                ->label('Asset Sub Jenis Data ID')
                 ->requiredMapping()
-                ->example('Pendidikan')
-                ->rules(['required', 'string']),
-                
-            ImportColumn::make('nama_subjenis')
-                ->label('Sub Jenis')
-                ->requiredMapping()
-                ->example('SD')
-                ->rules(['required', 'string']),
-                
-            ImportColumn::make('nama_data')
-                ->label('Nama Data')
-                ->requiredMapping()
-                ->example('Jumlah Siswa')
-                ->rules(['required', 'string']),
+                ->example('1')
+                ->rules(['required', 'integer', 'exists:assetdesa_sub_jenis_data,id']),
                 
             ImportColumn::make('jawaban')
                 ->label('Jawaban')
@@ -42,84 +31,112 @@ class SubJenisAssetDataImporter extends Importer
                 ->example('500')
                 ->rules(['required', 'string']),
 
-            ImportColumn::make('respondsurvey_id')
-                ->label('Respond Survey ID')
-                ->required()
-                ->hidden()
-                ->rules(['integer', 'exists:respond_assetdesa,id']),
+            ImportColumn::make('respond_assetdesa_detail_id')
+                ->label('Respond Asset Desa Detail ID')
+                ->requiredMapping()
+                ->rules(['integer', 'exists:respond_assetdesa_detail,id']),
+        ];
+    }
+    
+    public static function getCsvContents(): string
+    {
+        $subJenisDataItems = AssetDesaSubJenisData::take(5)->get();
+        $respondDetails = RespondAssetDesaDetail::take(1)->get();
+        
+        $headers = ['assetdesa_sub_jenis_data_id', 'jawaban', 'respond_assetdesa_detail_id'];
+        $rows = [];
+        
+        $sampleRespondDetailId = $respondDetails->isNotEmpty() ? $respondDetails->first()->id : '1';
+        
+        if ($subJenisDataItems->isNotEmpty()) {
+            foreach ($subJenisDataItems as $dataItem) {
+                $rows[] = [
+                    $dataItem->id,
+                    'Contoh jawaban',
+                    $sampleRespondDetailId
+                ];
+            }
+        }
+        
+        if (empty($rows)) {
+            $rows = [
+                ['1', '500', $sampleRespondDetailId],
+                ['2', '30', $sampleRespondDetailId],
+                ['3', '300', $sampleRespondDetailId],
+                ['4', '25', $sampleRespondDetailId]
+            ];
+        }
+        
+        $csv = implode(',', $headers) . "\n";
+        foreach ($rows as $row) {
+            $csv .= implode(',', $row) . "\n";
+        }
+        
+        return $csv;
+    }
+    
+    public function getValidationMessages(): array
+    {
+        return [
+            'assetdesa_sub_jenis_data_id.required' => 'ID Data Asset Sub Jenis harus diisi',
+            'assetdesa_sub_jenis_data_id.integer' => 'ID Data Asset Sub Jenis harus berupa angka',
+            'assetdesa_sub_jenis_data_id.exists' => 'ID Data Asset Sub Jenis tidak ditemukan',
+            'jawaban.required' => 'Jawaban harus diisi',
+            'respond_assetdesa_detail_id.required' => 'ID Respond Asset Desa Detail harus diisi',
+            'respond_assetdesa_detail_id.exists' => 'ID Respond Asset Desa Detail tidak ditemukan',
         ];
     }
     
     public function import(Import $import, array $data): void
     {
         try {
-            // Find the Asset Desa by jenis
-            $assetDesa = AssetDesa::where('jenis', $data['jenis_asset'])
-                ->where('is_data', true)
-                ->where('is_sub_jenis', true)
-                ->first();
-            
-            if (!$assetDesa) {
-                \Log::warning('Sub jenis asset not found: ' . $data['jenis_asset']);
+            if (empty($data['assetdesa_sub_jenis_data_id']) || empty($data['jawaban']) || empty($data['respond_assetdesa_detail_id'])) {
+                Log::warning('Data tidak lengkap', $data);
                 $import->skipRow();
                 return;
             }
             
-            // Find the sub jenis by name
-            $subJenis = AssetDesaSubJenis::where('assetdesa_id', $assetDesa->id)
-                ->where('subjenis', $data['nama_subjenis'])
-                ->first();
-                
-            if (!$subJenis) {
-                \Log::warning('Sub jenis not found: ' . $data['nama_subjenis']);
-                $import->skipRow();
-                return;
-            }
-            
-            // Find the sub jenis data by name
-            $subJenisData = AssetDesaSubJenisData::where('subjenis_id', $subJenis->id)
-                ->where('nama', $data['nama_data'])
-                ->first();
-                
+            $subJenisData = AssetDesaSubJenisData::find($data['assetdesa_sub_jenis_data_id']);
             if (!$subJenisData) {
-                \Log::warning('Sub jenis data not found: ' . $data['nama_data']);
+                Log::warning('Data asset sub jenis tidak ditemukan', ['id' => $data['assetdesa_sub_jenis_data_id']]);
                 $import->skipRow();
                 return;
             }
             
-            // Find or create the respond detail
-            $respondDetail = RespondAssetDesaDetail::firstOrCreate(
-                [
-                    'respond_assetdesa_id' => $data['respondsurvey_id'],
-                    'assetdesa_id' => $assetDesa->id,
-                    'assetdesa_sub_jenis_id' => $subJenis->id,
-                    'assetdesa_sub_jenis_data_id' => $subJenisData->id,
-                ]
-            );
+            $respondDetail = RespondAssetDesaDetail::find($data['respond_assetdesa_detail_id']);
+            if (!$respondDetail) {
+                Log::warning('Respond asset desa detail tidak ditemukan', ['id' => $data['respond_assetdesa_detail_id']]);
+                $import->skipRow();
+                return;
+            }
             
-            // Find or create the sub jenis data response
-            $existingData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $respondDetail->id)
-                ->where('assetdesa_sub_jenis_data_id', $subJenisData->id)
+            $existingData = RespondAssetDesaSubJenisData::where('respond_assetdesa_detail_id', $data['respond_assetdesa_detail_id'])
+                ->where('assetdesa_sub_jenis_data_id', $data['assetdesa_sub_jenis_data_id'])
                 ->first();
                 
             if ($existingData) {
                 $existingData->update(['jawaban' => $data['jawaban']]);
-                \Log::info('Updated sub jenis data', ['id' => $existingData->id]);
+                Log::info('Updated sub jenis data', ['id' => $existingData->id]);
             } else {
                 $newData = RespondAssetDesaSubJenisData::create([
-                    'respond_assetdesa_detail_id' => $respondDetail->id,
-                    'assetdesa_sub_jenis_data_id' => $subJenisData->id,
+                    'respond_assetdesa_detail_id' => $data['respond_assetdesa_detail_id'],
+                    'assetdesa_sub_jenis_data_id' => $data['assetdesa_sub_jenis_data_id'],
                     'jawaban' => $data['jawaban']
                 ]);
-                \Log::info('Created sub jenis data', ['id' => $newData->id]);
+                Log::info('Created sub jenis data', ['id' => $newData->id]);
             }
         } catch (\Exception $e) {
-            \Log::error('Import error: ' . $e->getMessage(), [
+            Log::error('Import error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'data' => $data
             ]);
             throw $e;
         }
+    }
+    
+    public function resolveRecord(): ?RespondAssetDesaSubJenisData
+    {
+        return new RespondAssetDesaSubJenisData();
     }
     
     public static function getCompletedNotificationBody(Import $import): string
