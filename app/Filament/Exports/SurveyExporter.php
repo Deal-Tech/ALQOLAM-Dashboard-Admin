@@ -24,7 +24,7 @@ class SurveyExporter extends Exporter
             ExportColumn::make('variabel.nama')
                 ->label('Variabel'),
             ExportColumn::make('subvariabel.nama')
-                ->label('Sub Variabel'),
+                ->label('Indikator'),
             ExportColumn::make('opsi_jawaban_1')
                 ->label('Opsi Jawaban 1'),
             ExportColumn::make('opsi_jawaban_2')

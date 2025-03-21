@@ -24,6 +24,8 @@ class SubVariabelResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    protected static ?string $slug = 'indikator';
+
     protected static ?string $cluster = DimensiCluster::class;
 
     public static function getLabel(): string

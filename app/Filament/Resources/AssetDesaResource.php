@@ -204,7 +204,7 @@ class AssetDesaResource extends Resource
                     ->icon('heroicon-o-plus')
                     ->color('primary'),
                 Tables\Actions\ExportAction::make()
-                    ->label('Ekspor Data')
+                    ->label('Ekspor Jenis Aset')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->exporter(AssetDesaExporter::class)
             ]);
