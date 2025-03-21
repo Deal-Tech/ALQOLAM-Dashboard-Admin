@@ -14,7 +14,8 @@ class AssetDesaData extends Model
     protected $fillable = [
         'assetdesa_id',
         'value',
-        'is_multiple_answer'
+        'is_multiple_answer',
+        'nama'
     ];
     
     protected $casts = [

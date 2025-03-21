@@ -3,91 +3,188 @@
 namespace App\Filament\Exports;
 
 use App\Models\AssetDesa;
+use App\Models\AssetDesaData;
+use App\Models\AssetDesaSubJenis;
+use App\Models\AssetDesaSubJenisData;
+use App\Models\AssetDesaJenisKelamin;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class AssetDesaExporter extends Exporter
 {
     protected static ?string $model = AssetDesa::class;
+    
+    protected static string $format = 'xlsx';
 
     public static function getColumns(): array
     {
         return [
             ExportColumn::make('id')
                 ->label('ID'),
+                
             ExportColumn::make('jenis')
                 ->label('Jenis Asset'),
+                
             ExportColumn::make('is_data')
                 ->label('Is Data')
-                ->formatStateUsing(fn (bool $state) => $state ? 'Ya' : 'Tidak'),
+                ->formatStateUsing(fn ($state) => $state ? 'Ya' : 'Tidak'),
+                
             ExportColumn::make('is_sub_jenis')
                 ->label('Is Sub Jenis')
-                ->formatStateUsing(fn (bool $state) => $state ? 'Ya' : 'Tidak'),
+                ->formatStateUsing(fn ($state) => $state ? 'Ya' : 'Tidak'),
+                
             ExportColumn::make('is_jenis_kelamin')
                 ->label('Is Jenis Kelamin')
-                ->formatStateUsing(fn (bool $state) => $state ? 'Ya' : 'Tidak'),
-            
-            // Add detailed data information
-            ExportColumn::make('data_details')
-                ->label('Data Detail')
+                ->formatStateUsing(fn ($state) => $state ? 'Ya' : 'Tidak'),
+                
+            ExportColumn::make('regular_data')
+                ->label('Data Reguler')
                 ->state(function (AssetDesa $record): string {
-                    if (!$record->is_data) {
-                        return 'Tidak ada data';
+                    if (!$record->is_data || $record->is_sub_jenis) {
+                        return '';
                     }
                     
-                    // For regular data (not sub jenis)
-                    if (!$record->is_sub_jenis) {
-                        $dataItems = $record->data->map(function ($item) {
-                            return $item->nama . ($item->is_multiple_answer ? ' (Multiple)' : '');
-                        })->implode(', ');
+                    $dataItems = AssetDesaData::where('assetdesa_id', $record->id)
+                        ->orderBy('id')
+                        ->get();
+                    
+                    if ($dataItems->isEmpty()) {
+                        return '';
+                    }
+                    
+                    $output = [];
+                    foreach ($dataItems as $item) {
+                        $multiple = $item->is_multiple_answer ? ' (Multiple)' : '';
+                        $nama = str_replace(['"', ':', '\n', '\r'], ['', '-', ' ', ' '], $item->nama);
                         
-                        return $dataItems ?: 'Tidak ada data';
-                    }
-                    
-                    // For data with sub jenis
-                    $subJenisData = [];
-                    foreach ($record->subJenis as $subJenis) {
-                        $dataItems = $subJenis->data->map(function ($item) {
-                            return $item->nama . ($item->is_multiple_answer ? ' (Multiple)' : '');
-                        })->implode(', ');
+                        $lineText = "ID {$item->id} - {$nama}{$multiple}";
+                        if (str_starts_with(trim($lineText), '=') || str_starts_with(trim($lineText), '-')) {
+                            $lineText = "' " . $lineText;
+                        }
                         
-                        $subJenisData[] = $subJenis->subjenis . ': ' . ($dataItems ?: 'Tidak ada data');
+                        $output[] = $lineText;
                     }
                     
-                    return implode(' | ', $subJenisData) ?: 'Tidak ada data sub jenis';
+                    return implode("\n", $output);
                 }),
-            
-            // Add jenis kelamin information
+                
+            ExportColumn::make('sub_jenis_data')
+                ->label('Data Sub Jenis')
+                ->state(function (AssetDesa $record): string {
+                    if (!$record->is_data || !$record->is_sub_jenis) {
+                        return '';
+                    }
+                    
+                    $subJenisItems = DB::table('assetdesa_sub_jenis')
+                        ->where('assetdesa_id', $record->id)
+                        ->orderBy('id')
+                        ->get();
+                    
+                    if ($subJenisItems->isEmpty()) {
+                        return 'Tidak ada sub jenis untuk asset ini';
+                    }
+                    
+                    $output = [];
+                    foreach ($subJenisItems as $subJenis) {
+                        $subjenis_text = str_replace(['"', ':', '\n', '\r'], ['', '-', ' ', ' '], $subJenis->subjenis);
+                        
+                        $headerText = "*** Sub Jenis {$subjenis_text} (ID {$subJenis->id}) ***";
+                        if (str_starts_with(trim($headerText), '=') || str_starts_with(trim($headerText), '-')) {
+                            $headerText = "' " . $headerText;
+                        }
+                        
+                        $output[] = $headerText;
+                        
+                        $dataItems = DB::table('assetdesa_sub_jenis_data')
+                            ->where('subjenis_id', $subJenis->id)
+                            ->orderBy('id')
+                            ->get();
+                        
+                        if ($dataItems->isEmpty()) {
+                            $output[] = "Tidak ada data";
+                        } else {
+                            foreach ($dataItems as $item) {
+                                $nama = str_replace(['"', ':', '\n', '\r'], ['', '-', ' ', ' '], $item->nama);
+                                
+                                $lineText = "ID {$item->id} - {$nama}";
+                                if (str_starts_with(trim($lineText), '=') || str_starts_with(trim($lineText), '-')) {
+                                    $lineText = "' " . $lineText;
+                                }
+                                
+                                $output[] = $lineText;
+                            }
+                        }
+                        
+                        $output[] = ""; 
+                    }
+                    
+                    return implode("\n", $output);
+                }),
+                
             ExportColumn::make('jenis_kelamin_data')
-                ->label('Jenis Kelamin')
+                ->label('Data Jenis Kelamin')
                 ->state(function (AssetDesa $record): string {
                     if (!$record->is_jenis_kelamin) {
-                        return 'Bukan data jenis kelamin';
+                        return '';
                     }
                     
-                    $jenisKelamin = $record->jenisKelamin->pluck('nama')->implode(', ');
-                    return $jenisKelamin ?: 'Tidak ada data jenis kelamin';
+                    $jenisKelaminItems = AssetDesaJenisKelamin::where('assetdesa_id', $record->id)
+                        ->orderBy('id')
+                        ->get();
+                    
+                    if ($jenisKelaminItems->isEmpty()) {
+                        return '';
+                    }
+                    
+                    $output = [];
+                    foreach ($jenisKelaminItems as $item) {
+                        $nama = str_replace(['"', ':', '\n', '\r'], ['', '-', ' ', ' '], $item->nama);
+                        
+                        $lineText = "ID {$item->id} - {$nama}";
+                        if (str_starts_with(trim($lineText), '=') || str_starts_with(trim($lineText), '-')) {
+                            $lineText = "' " . $lineText;
+                        }
+                        
+                        $output[] = $lineText;
+                    }
+                    
+                    return implode("\n", $output);
                 }),
             
             ExportColumn::make('created_at')
                 ->label('Dibuat Pada'),
+                
             ExportColumn::make('updated_at')
                 ->label('Diperbarui Pada'),
         ];
     }
 
-    // Customize the behavior to include relationships
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['data', 'subJenis.data', 'jenisKelamin']);
+            ->select([
+                'id', 
+                'jenis', 
+                'is_data', 
+                'is_sub_jenis', 
+                'is_jenis_kelamin',
+                'created_at',
+                'updated_at'
+            ])
+            ->orderBy('jenis');
+    }
+    
+    public static function getExportName(): string
+    {
+        return 'Data Asset Desa - ' . now()->format('d-m-Y');
     }
 
     public static function getCompletedNotificationBody(Export $export): string
     {
         $count = $export->successful_rows;
-        return "Ekspor {$count} data aset desa beserta detailnya telah selesai.";
+        return "Berhasil mengekspor {$count} data aset desa.";
     }
 }

@@ -32,6 +32,16 @@ class AssetDesaResource extends Resource
     protected static ?string $navigationLabel = 'Data Aset';
     protected static ?string $slug = 'asset-desa';
 
+    public static function getLabel(): string
+    {
+        return 'Aset Desa';
+    }
+
+    public static function getPluralLabel(): string
+    {
+        return 'Aset Desa';
+    }
+
     public static function form(Form $form): Form 
     {
         return $form
@@ -206,7 +216,7 @@ class AssetDesaResource extends Resource
                 Tables\Actions\ExportAction::make()
                     ->label('Ekspor Jenis Aset')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->exporter(AssetDesaExporter::class)
+                    ->exporter(AssetDesaExporter::class),
             ]);
     }
 
