@@ -17,7 +17,8 @@ class RespondAssetDesa extends Model
         'desa_id',
         'user_id',
         'is_completed',
-        'is_published'
+        'is_published',
+        'created_at'
     ];
 
     // Define casts for boolean fields

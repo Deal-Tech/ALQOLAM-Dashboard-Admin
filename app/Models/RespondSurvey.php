@@ -21,6 +21,7 @@ class RespondSurvey extends Model
         'dosenpendamping_id',
         'is_compled',
         'is_published',
+        'created_at',
     ];
 
     public function kabupaten()

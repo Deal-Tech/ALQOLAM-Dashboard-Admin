@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\DatePicker;
 
 
 class RespondSurveyResource extends Resource
@@ -82,6 +83,9 @@ class RespondSurveyResource extends Resource
                     Forms\Components\Toggle::make('is_published')
                         ->label('Dipublikasi')
                         ->required(),
+                    DatePicker::make('created_at')
+                        ->label('Tanggal Survey')
+                        ->native(false),
                 ])
             ])
             

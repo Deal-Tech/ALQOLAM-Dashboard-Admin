@@ -16,6 +16,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use App\Filament\Imports\RespondAsetDesaDetailImporter;
+use Filament\Forms\Components\DatePicker;
 
 class RespondAssetDesaResource extends Resource
 {
@@ -70,6 +71,9 @@ class RespondAssetDesaResource extends Resource
                                 Forms\Components\Toggle::make('is_published')
                                     ->label('Publikasikan')
                                     ->default(false),
+                                DatePicker::make('created_at')
+                                    ->label('Tanggal Survey')
+                                    ->native(false),
                             ])
                             ->columns(2)
                     ])
