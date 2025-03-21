@@ -11,7 +11,7 @@ class SubVariabel extends Model
 
     protected $table = 'subvariabel';
 
-    protected $fillable = ['variabel_id', 'nama', 'deskripsi'];
+    protected $fillable = ['variabel_id', 'nama', 'deskripsi', 'bobot'];
 
     public function variabel()
     {

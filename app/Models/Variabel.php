@@ -11,7 +11,7 @@ class Variabel extends Model
 
     protected $table = 'variabel';
 
-    protected $fillable = ['dimensi_id', 'nama', 'deskripsi'];
+    protected $fillable = ['dimensi_id', 'nama', 'deskripsi', 'bobot'];
 
     public function dimensi()
     {

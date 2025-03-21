@@ -46,6 +46,9 @@ class SubVariabelResource extends Resource
                 Forms\Components\TextInput::make('nama')
                     ->required()
                     ->placeholder('Nama Indikator'),
+                Forms\Components\TextInput::make('bobot')
+                    ->required()
+                    ->placeholder('Bobot'),
 
                 Forms\Components\Textarea::make('deskripsi')
                     ->placeholder('Deskripsi Indikator'),
@@ -70,7 +73,10 @@ class SubVariabelResource extends Resource
                         $words = explode(' ', $state);
                         return implode(' ', array_slice($words, 0, 5)) . (count($words) > 10 ? '...' : '');
                     }),
-                
+
+                Tables\Columns\TextColumn::make('bobot')
+                    ->label('Bobot'),
+
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Deskripsi'),
                 

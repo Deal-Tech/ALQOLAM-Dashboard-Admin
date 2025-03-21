@@ -47,6 +47,8 @@ class DimensiResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('deskripsi')
                     ->label('Deskripsi'),
+                Forms\Components\TextInput::make('bobot')
+                    ->label('Deskripsi'),
             ]);
     }
 
@@ -56,12 +58,15 @@ class DimensiResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('nama')
                     ->label('Nama'),
+                Tables\Columns\TextColumn::make('bobot')
+                    ->label('Bobot'),
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Deskripsi'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat Pada')
                     ->dateTime(),
             ])
+            ->defaultSort('bobot', 'desc')
             ->filters([
                 //
             ])

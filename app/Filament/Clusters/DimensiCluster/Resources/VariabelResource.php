@@ -44,6 +44,10 @@ class VariabelResource extends Resource
                 ->required()
                 ->placeholder('Nama Variabel'),
 
+                Forms\Components\TextInput::make('bobot')
+                    ->required()
+                    ->placeholder('Bobot Variabel'),
+
                 Forms\Components\Select::make('dimensi_id')
                     ->relationship('dimensi', 'nama'),
                     
@@ -66,6 +70,9 @@ class VariabelResource extends Resource
 
                 Tables\Columns\TextColumn::make('dimensi.nama')
                     ->label('Dimensi'),
+                
+                Tables\Columns\TextColumn::make('bobot')
+                    ->label('Bobot'),
 
                 Tables\Columns\TextColumn::make('deskripsi')
                     ->label('Deskripsi Variabel'),
@@ -75,6 +82,7 @@ class VariabelResource extends Resource
                     ->sortable()
                     ->label('Dibuat Pada'),
             ])
+            ->defaultSort('bobot', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('dimensi_id')
                     ->relationship('dimensi', 'nama')

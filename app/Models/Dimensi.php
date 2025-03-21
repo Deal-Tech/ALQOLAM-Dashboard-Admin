@@ -11,7 +11,7 @@ class Dimensi extends Model
 
     protected $table = 'dimensi'; 
 
-    protected $fillable = ['nama', 'deskripsi'];
+    protected $fillable = ['nama', 'deskripsi', 'bobot'];
 
     public function variabels()
     {

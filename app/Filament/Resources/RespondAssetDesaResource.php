@@ -149,6 +149,9 @@ class RespondAssetDesaResource extends Resource
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(3)
             ->headerActions([
+                Tables\Actions\CreateAction::make()
+                    ->label('Tambah Data')
+                    ->icon('heroicon-o-plus'),
                 Tables\Actions\ImportAction::make()
                     ->label('Import Details')
                     ->icon('heroicon-s-document-plus')
